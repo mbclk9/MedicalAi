@@ -3,11 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Mic, 
-  MicOff, 
-  Pause, 
-  Play, 
   Square, 
-  RotateCcw 
+  Play,
+  Wand2
 } from "lucide-react";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
 
@@ -19,10 +17,7 @@ export function RecordingControls({ onTranscriptionReady }: RecordingControlsPro
   const {
     recordingState,
     startRecording,
-    pauseRecording,
-    resumeRecording,
     stopRecording,
-    resetRecording,
     formatDuration,
     isTranscribing,
     transcriptionError,
@@ -38,128 +33,114 @@ export function RecordingControls({ onTranscriptionReady }: RecordingControlsPro
 
   const handleStopRecording = () => {
     stopRecording();
-    // The transcription callback will be handled by the useAudioRecording hook
   };
 
   return (
-    <Card className="w-full">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            {/* Recording Button */}
-            <Button
-              size="lg"
-              variant={recordingState.isRecording ? "destructive" : "default"}
-              onClick={recordingState.isRecording ? handleStopRecording : handleStartRecording}
-              disabled={isTranscribing}
-              className="w-12 h-12 rounded-full"
-            >
-              {recordingState.isRecording ? (
-                <MicOff className="h-5 w-5" />
-              ) : (
-                <Mic className="h-5 w-5" />
-              )}
-            </Button>
-
-            <div>
-              <div className="text-sm font-medium text-gray-900">
-                {recordingState.isRecording ? "Kayıt Aktif" : "Kayıt Hazır"}
-              </div>
-              <div className="text-sm text-gray-600">
-                {formatDuration(recordingState.duration)}
-              </div>
+    <div className="space-y-6">
+      {/* Recording Section */}
+      <Card className="w-full">
+        <CardContent className="p-8">
+          <div className="text-center space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Yeni Kayıt</h2>
+            <p className="text-sm text-gray-600">Hasta muayenesini kaydetmeye başlayın</p>
+            
+            {/* Recording Button - Large */}
+            <div className="flex justify-center">
+              <Button
+                size="lg"
+                variant={recordingState.isRecording ? "destructive" : "default"}
+                onClick={recordingState.isRecording ? handleStopRecording : handleStartRecording}
+                disabled={isTranscribing}
+                className="w-20 h-20 rounded-full text-white shadow-lg hover:scale-105 transition-transform"
+              >
+                {recordingState.isRecording ? (
+                  <Square className="h-8 w-8" />
+                ) : (
+                  <Mic className="h-8 w-8" />
+                )}
+              </Button>
             </div>
 
-            {/* Audio Wave Animation */}
-            {recordingState.isRecording && !recordingState.isPaused && (
-              <div className="audio-wave">
-                <div></div>
-                <div></div>
-                <div></div>
-                <div></div>
-                <div></div>
+            {/* Timer Display */}
+            <div className="space-y-2">
+              <div className="text-3xl font-mono font-bold text-gray-900">
+                {formatDuration(recordingState.duration)}
               </div>
-            )}
+              <p className="text-sm text-gray-600">
+                {recordingState.isRecording 
+                  ? "Kayıt devam ediyor..." 
+                  : isTranscribing 
+                  ? "Transkripsiyon işleniyor..."
+                  : "Kayıt başlatmak için butona tıklayın"
+                }
+              </p>
+            </div>
 
             {/* Recording Status */}
             {recordingState.isRecording && (
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 pulse-dot"></div>
-                {recordingState.isPaused ? "Duraklatıldı" : "Aktif"}
+              <div className="flex justify-center">
+                <Badge variant="destructive" className="animate-pulse">
+                  Kayıt Devam Ediyor
+                </Badge>
+              </div>
+            )}
+
+            {/* Transcription Error */}
+            {transcriptionError && (
+              <div className="text-red-600 text-sm mt-2">
+                Transkripsiyon hatası: {transcriptionError}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Live Transcription Section */}
+      <Card className="w-full">
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Play className="h-5 w-5 text-blue-600" />
+            <h3 className="text-lg font-medium text-gray-900">Canlı Transkripsiyon</h3>
+            <Badge variant="outline" className="text-xs">
+              {isTranscribing ? "İşleniyor..." : "Bekleniyor"}
+            </Badge>
+          </div>
+          
+          <div className="bg-gray-50 rounded-lg p-4 min-h-[120px]">
+            {recordingState.transcription ? (
+              <p className="text-gray-700 whitespace-pre-wrap">
+                {recordingState.transcription}
+              </p>
+            ) : (
+              <p className="text-gray-400 italic text-center">
+                Kayıt başladığında transkripsiyon burada görünecek
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Note Generation Section */}
+      <Card className="w-full">
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Wand2 className="h-5 w-5 text-blue-600" />
+            <h3 className="text-lg font-medium text-gray-900">AI Oluşturulan Not</h3>
+          </div>
+          
+          <div className="bg-blue-50 rounded-lg p-4 text-center">
+            <p className="text-gray-600 text-sm mb-4">
+              Kayıt tamamlandığında AI otomatik tıbbi not burada görünecek
+            </p>
+            
+            {recordingState.transcription && (
+              <Badge variant="secondary" className="text-xs">
+                Transkripsiyon hazır - AI ile not oluşturulabilir
               </Badge>
             )}
           </div>
-
-          {/* Control Buttons */}
-          <div className="flex items-center space-x-2">
-            {recordingState.isRecording && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={recordingState.isPaused ? resumeRecording : pauseRecording}
-                >
-                  {recordingState.isPaused ? (
-                    <Play className="h-4 w-4 mr-2" />
-                  ) : (
-                    <Pause className="h-4 w-4 mr-2" />
-                  )}
-                  {recordingState.isPaused ? "Devam Et" : "Duraklat"}
-                </Button>
-                
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleStopRecording}
-                >
-                  <Square className="h-4 w-4 mr-2" />
-                  Durdur
-                </Button>
-              </>
-            )}
-
-            {!recordingState.isRecording && recordingState.duration > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={resetRecording}
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Sıfırla
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Transcription Status */}
-        {isTranscribing && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-            <div className="flex items-center space-x-2">
-              <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full"></div>
-              <span className="text-sm text-blue-700">Ses metne çevriliyor...</span>
-            </div>
-          </div>
-        )}
-
-        {/* Transcription Result */}
-        {recordingState.transcription && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <div className="text-sm font-medium text-gray-900 mb-2">
-              Transkripsiyon ({Math.round(recordingState.confidence * 100)}% güven)
-            </div>
-            <p className="text-sm text-gray-700">{recordingState.transcription}</p>
-          </div>
-        )}
-
-        {/* Error Display */}
-        {transcriptionError && (
-          <div className="mt-4 p-4 bg-red-50 rounded-lg">
-            <div className="text-sm text-red-700">
-              Hata: {transcriptionError.message}
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

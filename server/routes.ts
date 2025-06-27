@@ -27,11 +27,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create patient
   app.post("/api/patients", async (req, res) => {
     try {
+      console.log("Patient creation request:", req.body);
       const patientData = insertPatientSchema.parse(req.body);
+      console.log("Validated patient data:", patientData);
       const patient = await storage.createPatient(patientData);
       res.json(patient);
     } catch (error) {
-      res.status(400).json({ message: "Invalid patient data" });
+      console.error("Patient creation error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          message: "Invalid patient data", 
+          errors: error.errors 
+        });
+      } else {
+        res.status(400).json({ message: "Invalid patient data" });
+      }
     }
   });
 
