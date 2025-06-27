@@ -114,71 +114,85 @@ export class AnthropicService {
 
   private createTurkishMedicalPrompt(transcription: string, templateStructure: any, specialty: string): string {
     return `
-Aşağıdaki ${specialty} muayenesi transkripsiyon metnini analiz ederek SOAP formatında yapılandırılmış tıbbi not oluştur.
+Sen Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarında çalışan uzman bir tıbbi sekreter asistanısın.
 
-Transkripsiyon: "${transcription}"
+HASTA GİZLİLİĞİ UYARISI: Bu tıbbi kayıt 6698 sayılı KVKK kapsamında korunmaktadır.
 
-Şablon yapısı: ${JSON.stringify(templateStructure, null, 2)}
+Verilen ${specialty} muayenesi transkripsiyon metnini analiz ederek T.C. Sağlık Bakanlığı tıbbi dokümantasyon standartlarına uygun SOAP formatında profesyonel tıbbi not oluştur.
 
-KATIT JSON formatında yanıt ver, şu şablonu kullan:
+TRANSKRIPSIYON METNİ:
+"${transcription}"
+
+UZMANLIK ALANI: ${specialty}
+
+ŞABLON YAPISI:
+${JSON.stringify(templateStructure, null, 2)}
+
+T.C. SAĞLIK BAKANLIĞI SOAP FORMATINDA JSON YANITI VER:
 
 {
-  "visitSummary": "Muayenenin genel özeti (1-2 cümle)",
+  "visitSummary": "Hasta [yaş]/[cinsiyet], [ana şikayet] nedeniyle başvurdu. [Muayene türü] yapıldı. [Genel durum]",
   "subjective": {
-    "complaint": "Ana şikayet",
-    "currentComplaints": "Mevcut şikayetler detayı",
-    "medicalHistory": ["Geçmiş hastalık öyküsü", "listesi"],
-    "medications": ["Kullandığı ilaçlar", "listesi"],
-    "socialHistory": "Sosyal öykü (varsa)",
-    "reviewOfSystems": "Sistem sorgusu (varsa)"
+    "complaint": "Hastanın ana şikayeti - kendi ifadesiyle",
+    "currentComplaints": "Mevcut hastalık öyküsü: şikayetin başlama zamanı, karakteri, süresi, etkileyen faktörler",
+    "medicalHistory": ["Diabetes mellitus", "Hipertansiyon", "Kalp hastalığı vb."],
+    "medications": ["İlaç adı - doz - kullanım şekli", "örn: Metformin 500mg 2x1"],
+    "socialHistory": "Sigara/alkol kullanımı, meslek, aile öyküsü",
+    "reviewOfSystems": "Konuşmada geçen sistem yakınmaları"
   },
   "objective": {
     "vitalSigns": {
-      "tansiyon": "",
-      "nabiz": "",
-      "ates": "",
-      "solunum": "",
-      "oksijen": ""
+      "bloodPressure": "120/80 mmHg",
+      "heartRate": "72/dk", 
+      "temperature": "36.5°C",
+      "respiratoryRate": "16/dk",
+      "oxygen": "SaO2: %98"
     },
-    "physicalExam": "Fizik muayene bulguları",
+    "physicalExam": "Genel durum: [iyi/orta/kötü], Bilinç: [açık/kapalı], Sistem bazında fizik muayene bulguları",
     "diagnosticResults": [
       {
-        "test": "Test adı",
-        "results": ["Sonuç", "listesi"]
+        "test": "Laboratuvar/Görüntüleme test adı",
+        "results": ["Test sonuçları ve değerleri"]
       }
     ]
   },
   "assessment": {
-    "general": "Genel değerlendirme",
+    "general": "Klinik tablonun genel değerlendirmesi",
     "diagnoses": [
       {
-        "diagnosis": "Tanı",
-        "icd10Code": "ICD-10 kodu (varsa)",
+        "diagnosis": "Türkçe tanı adı",
+        "icd10Code": "ICD-10 kodu",
         "type": "ana"
       }
     ]
   },
   "plan": {
-    "treatment": ["Tedavi planı", "adımları"],
+    "treatment": ["Medikal tedavi yaklaşımı", "Cerrahi girişim gereksinimi"],
     "medications": [
       {
-        "name": "İlaç adı",
-        "dosage": "Doz",
-        "frequency": "Kullanım sıklığı",
-        "duration": "Süre"
+        "name": "Türkiye'de kullanılan ilaç adı",
+        "dosage": "mg/ml/g cinsinden doz",
+        "frequency": "1x1, 2x1, 3x1",
+        "duration": "7 gün, 1 ay vb."
       }
     ],
-    "followUp": "Takip planı",
-    "lifestyle": ["Yaşam tarzı", "önerileri"]
+    "followUp": "X gün/hafta/ay sonra kontrol",
+    "lifestyle": ["Diyet önerileri", "Egzersiz", "Yaşam tarzı değişiklikleri"]
   }
 }
 
-Önemli kurallar:
-- Sadece transkripsiyon metninde belirtilen bilgileri kullan
-- Eksik bilgiler için boş string ("") veya boş array ([]) kullan
-- Türk tıbbi terminolojisini kullan
-- ICD-10 kodları sadece kesin tanılar için ekle
-- Tüm ilaç isimleri Türkçe olmalı
+T.C. SAĞLIK BAKANLIĞI STANDARTLARI:
+• 6698 sayılı KVKK uyumluluğu - hasta mahremiyeti korunmalı
+• Türk Tabipleri Birliği Hekimlik Meslek Etiği Kuralları uygun
+• SGK Sosyal Güvenlik Kurumu işlem kodlaması düşünülerek
+• TİTCK Türkiye İlaç ve Tıbbi Cihaz Kurumu onaylı ilaçlar
+• Hasta Hakları Yönetmeliği'ne uygun yaklaşım
+• ICD-10 tanı kodlama sistemi (sadece kesin tanılar için)
+• Türkiye Halk Sağlığı Kurumu kılavuzlarına uygun
+• Sadece konuşmada açıkça geçen bilgileri kullan
+• Varsayım yapma, objektif değerlendirme yap
+• Tıbbi terminolojiyi Türkçe kullan
+• JSON formatında yanıt ver
 `;
   }
 
