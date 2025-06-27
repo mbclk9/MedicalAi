@@ -19,6 +19,7 @@ export interface IStorage {
   getRecentVisits(limit?: number): Promise<(Visit & { patient: Patient })[]>;
   createVisit(visit: InsertVisit): Promise<Visit>;
   updateVisitStatus(id: number, status: string): Promise<Visit>;
+  deleteVisit(id: number): Promise<void>;
   
   // Medical notes
   getMedicalNote(visitId: number): Promise<MedicalNote | undefined>;

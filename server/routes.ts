@@ -108,6 +108,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete visit
+  app.delete("/api/visits/:id", async (req, res) => {
+    try {
+      const visitId = parseInt(req.params.id);
+      await storage.deleteVisit(visitId);
+      res.json({ success: true, message: "Muayene kaydı silindi" });
+    } catch (error) {
+      console.error("Delete visit error:", error);
+      res.status(500).json({ message: "Muayene silinirken hata oluştu" });
+    }
+  });
+
   // Audio transcription endpoint
   app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
     try {

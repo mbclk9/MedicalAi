@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,16 +10,54 @@ import {
   Clock, 
   CheckCircle, 
   AlertCircle,
-  User
+  User,
+  Trash2
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Visit } from "@/types/medical";
 
 export default function Dashboard() {
+  const { toast } = useToast();
 
   const { data: recentVisits = [], isLoading } = useQuery<Visit[]>({
     queryKey: ["/api/visits/recent"],
   });
+
+  const deleteVisitMutation = useMutation({
+    mutationFn: async (visitId: number) => {
+      const response = await fetch(`/api/visits/${visitId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to delete visit");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/visits/recent"] });
+      toast({
+        title: "Başarılı",
+        description: "Muayene kaydı silindi",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Hata",
+        description: "Muayene silinirken hata oluştu",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteVisit = (visitId: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (confirm("Bu muayene kaydını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) {
+      deleteVisitMutation.mutate(visitId);
+    }
+  };
 
 
 
@@ -163,6 +201,15 @@ export default function Dashboard() {
                                   </p>
                                 </div>
                                 <div className="flex items-center space-x-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => handleDeleteVisit(visit.id, e)}
+                                    disabled={deleteVisitMutation.isPending}
+                                    className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
                                   <Badge className={getStatusColor(visit.status)}>
                                     <StatusIcon className="mr-1 h-3 w-3" />
                                     {getStatusText(visit.status)}

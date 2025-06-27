@@ -216,6 +216,14 @@ export class DatabaseStorage implements IStorage {
     return updatedVisit;
   }
 
+  async deleteVisit(id: number): Promise<void> {
+    await this.initialize();
+    // İlişkili kayıtları da silmeli: tıbbi notlar ve ses kayıtları
+    await db.delete(medicalNotes).where(eq(medicalNotes.visitId, id));
+    await db.delete(recordings).where(eq(recordings.visitId, id));
+    await db.delete(visits).where(eq(visits.id, id));
+  }
+
   // Medical notes
   async getMedicalNote(visitId: number): Promise<MedicalNote | undefined> {
     await this.initialize();
