@@ -71,8 +71,9 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
       <Card className="w-full">
         <CardContent className="p-8">
           <div className="text-center space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">Yeni Kayıt</h2>
-            <p className="text-sm text-gray-600">Hasta muayenesini kaydetmeye başlayın</p>
+            <h2 className="text-xl font-semibold text-gray-900">Ses Kaydı</h2>
+            <p className="text-sm text-gray-600">Hasta-doktor görüşmesini kaydetmeye başlayın</p>
+            <p className="text-xs text-gray-500">Bu kayıt KVKK uyarınca güvenli şekilde işlenir</p>
             
             {/* Recording Button - Large */}
             <div className="flex justify-center">
@@ -98,10 +99,10 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
               </div>
               <p className="text-sm text-gray-600">
                 {recordingState.isRecording 
-                  ? "Kayıt devam ediyor..." 
+                  ? "Ses kaydı devam ediyor..." 
                   : isTranscribing 
-                  ? "Transkripsiyon işleniyor..."
-                  : "Kayıt başlatmak için butona tıklayın"
+                  ? "Metne dönüştürülüyor..."
+                  : "Hasta muayenesini kaydetmek için mikrofon butonuna tıklayın"
                 }
               </p>
             </div>
@@ -110,7 +111,7 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
             {recordingState.isRecording && (
               <div className="flex justify-center">
                 <Badge variant="destructive" className="animate-pulse">
-                  Kayıt Devam Ediyor
+                  🎤 Ses Kaydediliyor
                 </Badge>
               </div>
             )}
@@ -130,9 +131,9 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
         <CardContent className="p-6">
           <div className="flex items-center space-x-2 mb-4">
             <Play className="h-5 w-5 text-blue-600" />
-            <h3 className="text-lg font-medium text-gray-900">Canlı Transkripsiyon</h3>
+            <h3 className="text-lg font-medium text-gray-900">Metne Dönüştürme</h3>
             <Badge variant="outline" className="text-xs">
-              {isTranscribing ? "İşleniyor..." : "Bekleniyor"}
+              {isTranscribing ? "İşleniyor..." : "Hazır"}
             </Badge>
           </div>
           
@@ -143,7 +144,7 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
               </p>
             ) : (
               <p className="text-gray-400 italic text-center">
-                Kayıt başladığında transkripsiyon burada görünecek
+                Ses kaydı tamamlandıktan sonra metne dönüştürülen içerik burada görünecek
               </p>
             )}
           </div>
@@ -155,7 +156,7 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
         <CardContent className="p-6">
           <div className="flex items-center space-x-2 mb-4">
             <Wand2 className="h-5 w-5 text-blue-600" />
-            <h3 className="text-lg font-medium text-gray-900">AI Oluşturulan Not</h3>
+            <h3 className="text-lg font-medium text-gray-900">Tıbbi Not Oluşturma</h3>
             {generateNoteMutation.isPending && (
               <Badge variant="outline" className="text-xs animate-pulse">
                 Oluşturuluyor...
@@ -167,7 +168,7 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
             <div className="bg-green-50 rounded-lg p-4 space-y-4">
               <div className="flex items-center space-x-2">
                 <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
-                  AI Not Oluşturuldu ✓
+                  Tıbbi Not Oluşturuldu ✓
                 </Badge>
               </div>
               
@@ -184,7 +185,7 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
           ) : recordingState.transcription ? (
             <div className="bg-blue-50 rounded-lg p-4 text-center space-y-4">
               <p className="text-gray-600 text-sm">
-                Transkripsiyon hazır! AI ile tıbbi not oluşturmak için butona tıklayın.
+                Metne dönüştürme tamamlandı! SOAP formatında tıbbi not oluşturmak için butona tıklayın.
               </p>
               
               <Button 
@@ -193,7 +194,7 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <Wand2 className="h-4 w-4 mr-2" />
-                {generateNoteMutation.isPending ? "Oluşturuluyor..." : "AI ile Not Oluştur"}
+                {generateNoteMutation.isPending ? "Tıbbi Not Oluşturuluyor..." : "Tıbbi Not Oluştur"}
               </Button>
               
               {generateNoteMutation.error && (

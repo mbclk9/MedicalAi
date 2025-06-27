@@ -1,8 +1,8 @@
-# Medical Voice Assistant Platform - Replit Documentation
+# Türkiye Tıbbi Sekreter Platformu - Replit Dokümantasyonu
 
-## Overview
+## Genel Bakış
 
-This is a Turkish medical assistant platform designed for healthcare professionals in Turkey. The application combines AI-powered voice transcription with automated medical note generation, specifically tailored for the Turkish healthcare system. The platform supports real-time audio recording, Turkish speech-to-text conversion, and AI-powered medical note formatting compliant with Turkish medical standards.
+Bu platform, Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarına uygun olarak geliştirilmiş tıbbi sekreter asistanı uygulamasıdır. Türkiye sağlık sistemi için özel olarak tasarlanmış bu platform, ses kayıt teknolojisi ve yapay zeka destekli tıbbi not oluşturma özelliklerini bir araya getirir. Platform, 6698 sayılı KVKK uyumlu ses kaydı, Türkçe konuşma-metin dönüştürme ve T.C. Sağlık Bakanlığı tıbbi dokümantasyon standartlarına uygun SOAP formatında not oluşturma işlevlerini destekler.
 
 ## System Architecture
 
@@ -116,10 +116,16 @@ This is a Turkish medical assistant platform designed for healthcare professiona
 - **Start Command**: `npm run start`
 - **Auto-scaling**: Configured for production deployment
 
-## Changelog
+## Değişiklik Geçmişi
 ```
-Changelog:
-- June 27, 2025. Initial setup
+Türkiye Sağlık Bakanlığı Uyumlu Platform Güncellemeleri:
+- 27 Haziran 2025: Platform Türkiye sağlık standartlarına uygun hale getirildi
+  * KVKK uyumlu ses kayıt sistemi
+  * T.C. Sağlık Bakanlığı SOAP formatı uygulandı
+  * Türk Tabipleri Birliği etik kuralları entegrasyonu
+  * Deepgram Türkçe transkripsiyon + OpenAI tıbbi not üretimi
+  * Hasta mahremiyeti ve güvenlik önlemleri eklendi
+- 27 Haziran 2025: İlk kurulum ve temel yapı
 ```
 
 ## User Preferences
