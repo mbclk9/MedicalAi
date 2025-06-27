@@ -28,10 +28,15 @@ export default function AddPatient() {
 
   const addPatientMutation = useMutation({
     mutationFn: async (patientData: typeof formData): Promise<Patient> => {
-      const response = await apiRequest("POST", "/api/patients", {
+      const requestData = {
         ...patientData,
-        birthDate: patientData.birthDate ? new Date(patientData.birthDate) : null,
-      });
+        birthDate: patientData.birthDate ? new Date(patientData.birthDate) : undefined,
+        // Boş alanları temizle
+        tcKimlik: patientData.tcKimlik || undefined,
+        sgkNumber: patientData.sgkNumber || undefined,
+        phone: patientData.phone || undefined,
+      };
+      const response = await apiRequest("POST", "/api/patients", requestData);
       return await response.json();
     },
     onSuccess: (newPatient: Patient) => {

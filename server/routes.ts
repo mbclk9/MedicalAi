@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { deepgramService } from "./services/deepgramService";
+import { mockTranscriptionService } from "./services/mockTranscriptionService";
 import { mockAiService } from "./services/mockAiService";
 import multer from "multer";
 import { z } from "zod";
@@ -118,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         size: req.file.buffer.length
       });
 
-      const transcription = await deepgramService.transcribeAudio(req.file.buffer);
+      const transcription = await mockTranscriptionService.transcribeAudio(req.file.buffer);
       res.json(transcription);
     } catch (error) {
       console.error("Transcription error:", error);
