@@ -87,6 +87,15 @@ export interface MedicalNote {
   updatedAt?: Date;
 }
 
+export interface Recording {
+  id: number;
+  visitId: number;
+  duration?: number;
+  transcription?: string;
+  audioUrl?: string;
+  recordedAt?: Date;
+}
+
 export interface TranscriptionResult {
   text: string;
   confidence: number;

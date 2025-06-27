@@ -26,7 +26,7 @@ export default function PatientNote() {
   const visitId = params?.id;
 
   const { data: visitDetails, isLoading, error } = useQuery<VisitDetails>({
-    queryKey: ["/api/visits", visitId],
+    queryKey: [`/api/visits/${visitId}`],
     enabled: !!visitId,
   });
 
@@ -98,6 +98,15 @@ export default function PatientNote() {
             <p className="text-gray-600 mb-4">
               Aradığınız hasta kaydına erişilemiyor.
             </p>
+            {/* Debug bilgisi */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-left max-w-md mx-auto">
+              <p className="text-sm text-red-800">
+                <strong>Debug:</strong><br/>
+                Visit ID: {visitId}<br/>
+                Error: {error?.message || 'No data'}<br/>
+                URL: {window.location.pathname}
+              </p>
+            </div>
             <Link href="/">
               <Button>
                 <ArrowLeft className="mr-2 h-4 w-4" />

@@ -75,12 +75,18 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Start Visit Button */}
-      <div className="p-6 border-b border-gray-200">
+      {/* Action Buttons */}
+      <div className="p-6 border-b border-gray-200 space-y-3">
         <Link href="/visit/new">
           <Button className="w-full medical-gradient text-white py-3 px-4 font-medium hover:opacity-90 transition-opacity">
             <Plus className="mr-2 h-4 w-4" />
             Yeni Muayene Başlat
+          </Button>
+        </Link>
+        <Link href="/patient/add">
+          <Button variant="outline" className="w-full py-3 px-4 font-medium">
+            <FilePlus2 className="mr-2 h-4 w-4" />
+            Hasta Ekle
           </Button>
         </Link>
       </div>

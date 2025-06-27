@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { deepgramService } from "./services/deepgramService";
-import { openaiService } from "./services/openaiService";
+import { mockAiService } from "./services/mockAiService";
 import multer from "multer";
 import { z } from "zod";
 import { insertVisitSchema, insertPatientSchema, insertMedicalNoteSchema } from "@shared/schema";
@@ -146,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const medicalNote = await openaiService.generateMedicalNote(
+      const medicalNote = await mockAiService.generateMedicalNote(
         transcription, 
         templateStructure, 
         specialty
