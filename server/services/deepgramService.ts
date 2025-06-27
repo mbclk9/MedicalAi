@@ -16,34 +16,42 @@ export interface TranscriptionResult {
 export class DeepgramService {
   async transcribeAudio(audioBuffer: Buffer, language = "tr"): Promise<TranscriptionResult> {
     try {
-      console.log(`Mock Transcription: Processing ${audioBuffer.length} bytes of audio data`);
+      console.log(`Deepgram Transcription: Processing ${audioBuffer.length} bytes of audio data`);
       
-      // Deepgram API'sinden boş sonuç dönüyor, test için mock data kullanıyoruz
-      const mockTranscriptions = [
-        "Hastanın göğüs ağrısı şikayeti var. Son bir haftadır devam ediyor. Efor ile artıyor, dinlenmekle geçiyor.",
-        "Baş ağrısı şikayeti ile başvurdu. Sabahları daha şiddetli oluyor. Ateş yok.",
-        "Nefes darlığı yakınması var. Merdiven çıkarken zorlanıyor. Öksürük de eşlik ediyor.",
-        "Karın ağrısı şikayeti mevcut. Yemeklerden sonra artıyor. Bulantı da var.",
-        "Kontrole geldi. İlaçlarını düzenli kullanıyor. Genel durumu iyi."
-      ];
+      const response = await deepgram.listen.prerecorded.transcribeFile(
+        audioBuffer,
+        {
+          model: "nova-2",
+          language: language,
+          smart_format: true,
+          punctuate: true,
+          diarize: false,
+          utterances: false,
+          word_timestamps: true,
+        }
+      );
+
+      console.log("Deepgram response:", JSON.stringify(response, null, 2));
+
+      const transcript = response.result?.results?.channels?.[0]?.alternatives?.[0];
       
-      // Rastgele bir transkripsiyon seç
-      const randomText = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
-      
-      // Kısa gecikme ekle
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      if (!transcript || !transcript.transcript) {
+        console.log("No transcript found in Deepgram response");
+        throw new Error("No transcription result from Deepgram");
+      }
+
       const result: TranscriptionResult = {
-        text: randomText,
-        confidence: 0.85,
-        words: randomText.split(' ').map((word, index) => ({
-          word,
-          start: index * 0.5,
-          end: (index + 1) * 0.5,
-          confidence: 0.85
+        text: transcript.transcript,
+        confidence: transcript.confidence || 0,
+        words: transcript.words?.map(word => ({
+          word: word.word,
+          start: word.start,
+          end: word.end,
+          confidence: word.confidence
         }))
       };
 
+      console.log("Deepgram transcription result:", result);
       return result;
     } catch (error) {
       console.error("Deepgram transcription error:", error);

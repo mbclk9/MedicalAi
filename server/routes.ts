@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { mockTranscriptionService } from "./services/mockTranscriptionService";
-import { mockAiService } from "./services/mockAiService";
+import { deepgramService } from "./services/deepgramService";
+import { openaiService } from "./services/openaiService";
 import multer from "multer";
 import { z } from "zod";
 import { insertVisitSchema, insertPatientSchema, insertMedicalNoteSchema } from "@shared/schema";
@@ -128,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         size: req.file.buffer.length
       });
 
-      const transcription = await mockTranscriptionService.transcribeAudio(req.file.buffer);
+      const transcription = await deepgramService.transcribeAudio(req.file.buffer, "tr");
       res.json(transcription);
     } catch (error) {
       console.error("Transcription error:", error);
@@ -156,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const medicalNote = await mockAiService.generateMedicalNote(
+      const medicalNote = await openaiService.generateMedicalNote(
         transcription, 
         templateStructure, 
         specialty
