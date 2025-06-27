@@ -19,11 +19,18 @@ export function useAudioRecording(onTranscriptionReady?: (transcription: string)
 
   const transcribeMutation = useMutation({
     mutationFn: async (audioBlob: Blob): Promise<TranscriptionResult> => {
+      console.log("Starting transcription request for blob:", audioBlob.size, "bytes");
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.webm");
       
+      console.log("Sending transcription request...");
       const response = await apiRequest("POST", "/api/transcribe", formData);
-      return response.json();
+      const result = await response.json();
+      console.log("Transcription response:", result);
+      return result;
+    },
+    onError: (error) => {
+      console.error("Transcription mutation error:", error);
     },
   });
 
@@ -102,7 +109,7 @@ export function useAudioRecording(onTranscriptionReady?: (transcription: string)
       console.error("Failed to start recording:", error);
       throw new Error("Mikrofona erişim sağlanamadı. Lütfen mikrofon izinlerini kontrol edin.");
     }
-  }, [transcribeMutation]);
+  }, [transcribeMutation.mutateAsync]);
 
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && recordingState.isRecording) {

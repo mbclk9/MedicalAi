@@ -25,6 +25,7 @@ export default function NewVisit() {
   const [transcription, setTranscription] = useState<string>("");
   const [visitCreated, setVisitCreated] = useState(false);
   const [createdVisitId, setCreatedVisitId] = useState<number | null>(null);
+  const [isGeneratingNote, setIsGeneratingNote] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -109,8 +110,48 @@ export default function NewVisit() {
     setShowTemplateModal(false);
   };
 
-  const handleTranscriptionReady = (newTranscription: string) => {
+  const generateNoteMutation = useMutation({
+    mutationFn: async (data: { transcription: string; visitId: number; templateId?: number }) => {
+      const response = await apiRequest("POST", "/api/generate-note", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Başarılı",
+        description: "Tıbbi not başarıyla oluşturuldu.",
+      });
+      // Navigate to the note editing page
+      if (createdVisitId) {
+        setLocation(`/visit/${createdVisitId}`);
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Hata",
+        description: "Tıbbi not oluşturulurken hata oluştu: " + error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleTranscriptionReady = async (newTranscription: string) => {
     setTranscription(newTranscription);
+    
+    // Automatically generate medical note after transcription
+    if (createdVisitId && selectedTemplate && newTranscription.trim()) {
+      setIsGeneratingNote(true);
+      try {
+        await generateNoteMutation.mutateAsync({
+          transcription: newTranscription,
+          visitId: createdVisitId,
+          templateId: selectedTemplate.id,
+        });
+      } catch (error) {
+        console.error("Failed to generate note:", error);
+      } finally {
+        setIsGeneratingNote(false);
+      }
+    }
   };
 
   const handleCompleteAndNavigate = () => {
@@ -302,6 +343,21 @@ export default function NewVisit() {
                   <CardContent>
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <p className="text-gray-700 whitespace-pre-wrap">{transcription}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Note Generation Status */}
+              {(isGeneratingNote || generateNoteMutation.isPending) && (
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">Tıbbi Not Oluşturuluyor</h3>
+                        <p className="text-sm text-gray-600">AI transkripsiyon metnini analiz ediyor ve yapılandırılmış not hazırlıyor...</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
