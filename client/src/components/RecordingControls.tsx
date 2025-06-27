@@ -26,7 +26,7 @@ export function RecordingControls({ onTranscriptionReady }: RecordingControlsPro
     formatDuration,
     isTranscribing,
     transcriptionError,
-  } = useAudioRecording();
+  } = useAudioRecording(onTranscriptionReady);
 
   const handleStartRecording = async () => {
     try {
@@ -38,9 +38,7 @@ export function RecordingControls({ onTranscriptionReady }: RecordingControlsPro
 
   const handleStopRecording = () => {
     stopRecording();
-    if (recordingState.transcription && onTranscriptionReady) {
-      onTranscriptionReady(recordingState.transcription);
-    }
+    // The transcription callback will be handled by the useAudioRecording hook
   };
 
   return (

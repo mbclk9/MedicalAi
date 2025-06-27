@@ -101,9 +101,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Audio transcription endpoint
   app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
     try {
+      console.log("Transcription request received:", {
+        hasFile: !!req.file,
+        body: req.body,
+        headers: req.headers['content-type']
+      });
+
       if (!req.file) {
+        console.log("No file in request");
         return res.status(400).json({ message: "No audio file provided" });
       }
+
+      console.log("Audio file details:", {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.buffer.length
+      });
 
       const transcription = await deepgramService.transcribeAudio(req.file.buffer);
       res.json(transcription);

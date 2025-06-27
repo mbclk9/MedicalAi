@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { TranscriptionResult, RecordingState } from "@/types/medical";
 
-export function useAudioRecording() {
+export function useAudioRecording(onTranscriptionReady?: (transcription: string) => void) {
   const [recordingState, setRecordingState] = useState<RecordingState>({
     isRecording: false,
     isPaused: false,
@@ -57,16 +57,27 @@ export function useAudioRecording() {
           type: "audio/webm;codecs=opus" 
         });
         
-        // Transcribe the audio
-        try {
-          const result = await transcribeMutation.mutateAsync(audioBlob);
-          setRecordingState(prev => ({
-            ...prev,
-            transcription: result.text,
-            confidence: result.confidence,
-          }));
-        } catch (error) {
-          console.error("Transcription failed:", error);
+        console.log("Audio blob created:", audioBlob.size, "bytes");
+        
+        // Only transcribe if we have audio data
+        if (audioBlob.size > 0) {
+          try {
+            const result = await transcribeMutation.mutateAsync(audioBlob);
+            setRecordingState(prev => ({
+              ...prev,
+              transcription: result.text,
+              confidence: result.confidence,
+            }));
+            
+            // Call the callback if provided
+            if (onTranscriptionReady && result.text) {
+              onTranscriptionReady(result.text);
+            }
+          } catch (error) {
+            console.error("Transcription failed:", error);
+          }
+        } else {
+          console.warn("No audio data recorded");
         }
       };
 
