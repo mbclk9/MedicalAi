@@ -169,6 +169,8 @@ export default function PatientNote() {
           {/* Recording Controls */}
           <RecordingControls 
             onTranscriptionReady={handleTranscriptionReady}
+            visitId={visit.id}
+            templateId={visit.templateId || undefined}
           />
 
           {/* Current Transcription Display */}

@@ -59,7 +59,7 @@ export function useAudioRecording(onTranscriptionReady?: (transcription: string)
         }
       };
 
-      mediaRecorder.onstop = async () => {
+      mediaRecorder.onstop = () => {
         const audioBlob = new Blob(chunksRef.current, { 
           type: "audio/webm;codecs=opus" 
         });
@@ -68,21 +68,24 @@ export function useAudioRecording(onTranscriptionReady?: (transcription: string)
         
         // Only transcribe if we have audio data
         if (audioBlob.size > 0) {
-          try {
-            const result = await transcribeMutation.mutateAsync(audioBlob);
-            setRecordingState(prev => ({
-              ...prev,
-              transcription: result.text,
-              confidence: result.confidence,
-            }));
-            
-            // Call the callback if provided
-            if (onTranscriptionReady && result.text) {
-              onTranscriptionReady(result.text);
+          transcribeMutation.mutate(audioBlob, {
+            onSuccess: (result) => {
+              console.log("Transcription successful, updating state:", result);
+              setRecordingState(prev => ({
+                ...prev,
+                transcription: result.text,
+                confidence: result.confidence,
+              }));
+              
+              // Call the callback if provided
+              if (onTranscriptionReady && result.text) {
+                onTranscriptionReady(result.text);
+              }
+            },
+            onError: (error) => {
+              console.error("Transcription failed:", error);
             }
-          } catch (error) {
-            console.error("Transcription failed:", error);
-          }
+          });
         } else {
           console.warn("No audio data recorded");
         }
