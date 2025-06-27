@@ -47,9 +47,19 @@ export function useAudioRecording(onTranscriptionReady?: (transcription: string)
       streamRef.current = stream;
       chunksRef.current = [];
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm;codecs=opus",
-      });
+      // Try different audio formats based on browser support
+      let mimeType = "audio/webm;codecs=opus";
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = "audio/wav";
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = "audio/mp4";
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = ""; // Use default
+          }
+        }
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
       
       mediaRecorderRef.current = mediaRecorder;
 
@@ -61,7 +71,7 @@ export function useAudioRecording(onTranscriptionReady?: (transcription: string)
 
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(chunksRef.current, { 
-          type: "audio/webm;codecs=opus" 
+          type: mimeType || "audio/webm;codecs=opus" 
         });
         
         console.log("Audio blob created:", audioBlob.size, "bytes");
