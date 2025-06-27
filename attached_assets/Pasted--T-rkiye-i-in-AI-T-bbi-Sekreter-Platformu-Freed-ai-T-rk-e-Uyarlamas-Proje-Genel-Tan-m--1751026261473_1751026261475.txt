@@ -1,0 +1,231 @@
+# Türkiye için AI Tıbbi Sekreter Platformu - Freed.ai Türkçe Uyarlaması
+
+## Proje Genel Tanımı
+
+Türkiye sağlık sistemine özel olarak tasarlanmış, AI destekli tıbbi sekreter platformu geliştir. Platform, sağlık profesyonellerinin hasta muayenelerini otomatik olarak kayıt altına alacak, Türkçe tıbbi notlar oluşturacak ve Türk sağlık mevzuatına uygun raporlar hazırlayacak.
+
+## Temel Özellikler
+
+### 1. Ses Kayıt ve Transkripsiyon Sistemi
+- **Real-time Türkçe ses tanıma** (Web Speech API + Azure Speech Services)
+- **3 saate kadar kesintisiz kayıt** yapabilme
+- **Çoklu konuşmacı tanıma** (doktor, hasta, refakatçi)
+- **Tıbbi terminoloji filtreleme** (arka plan konuşmalarını eleme)
+- **Gürültü bastırma** ve ses kalitesi artırma
+
+### 2. AI Destekli Not Oluşturma
+- **Türkçe GPT entegrasyonu** (OpenAI GPT-4 veya Azure OpenAI)
+- **Türk tıbbi terminolojisi** database'i
+- **Doktor tarzını öğrenme** algoritması
+- **Otomatik formatlaştırma** (Sağlık Bakanlığı standartları)
+- **İlaç adları ve dozaj** otomatik düzeltme
+
+### 3. Türkiye Sağlık Sistemi Entegrasyonu
+- **SGK kodlama sistemi** entegrasyonu
+- **ICD-10 Türkçe** tanı kodları
+- **e-Nabız sistemi** uyumluluğu (isteğe bağlı)
+- **MHRS randevu bilgileri** çekme
+- **Türk Tabipleri Birliği** standartları
+
+## Teknik Altyapı
+
+### Frontend (React.js + TypeScript)
+```
+src/
+├── components/
+│   ├── AudioRecorder/
+│   ├── NoteEditor/
+│   ├── PatientInfo/
+│   ├── Dashboard/
+│   └── Settings/
+├── services/
+│   ├── speechToText.ts
+│   ├── aiNoteGenerator.ts
+│   ├── sgkIntegration.ts
+│   └── encryption.ts
+├── utils/
+│   ├── turkishMedicalTerms.ts
+│   ├── kvkkCompliance.ts
+│   └── dateHelpers.ts
+└── types/
+    ├── medicalNote.ts
+    ├── patient.ts
+    └── appointment.ts
+```
+
+### Backend (Node.js + Express + MongoDB)
+```
+api/
+├── controllers/
+│   ├── recordingController.js
+│   ├── noteController.js
+│   ├── patientController.js
+│   └── authController.js
+├── services/
+│   ├── aiService.js
+│   ├── encryptionService.js
+│   ├── sgkService.js
+│   └── auditService.js
+├── models/
+│   ├── Recording.js
+│   ├── MedicalNote.js
+│   ├── Patient.js
+│   └── Doctor.js
+└── middleware/
+    ├── kvkkMiddleware.js
+    ├── authMiddleware.js
+    └── rateLimiter.js
+```
+
+## Özel Türkiye Uyarlamaları
+
+### 1. KVKK ve Veri Güvenliği
+- **End-to-end şifreleme** (AES-256)
+- **Hasta onay sistemleri** (dijital imza)
+- **Veri silme hakları** otomasyonu
+- **Audit log** sistemi
+- **Yerel veri saklama** (Türkiye serverları)
+
+### 2. Türkçe Dil İşleme
+- **Türkçe grammar checker** entegrasyonu
+- **Yerel lehçe ve aksanlar** desteği
+- **Tıbbi kısaltmalar** sözlüğü
+- **Symptom-tanı mapping** Türkçe database
+- **Hasta talimatları** şablon sistemi
+
+### 3. Sağlık Sistemi Formatlama
+```typescript
+interface TurkishMedicalNote {
+  hastaBilgileri: {
+    tcKimlik?: string;
+    ad: string;
+    soyad: string;
+    dogumTarihi: Date;
+    sgkNo?: string;
+  };
+  muayeneBilgileri: {
+    tarih: Date;
+    saat: string;
+    muayeneTipi: 'ilk' | 'kontrol' | 'konsultasyon';
+    bransKodu: string;
+  };
+  anamnez: string;
+  fizikMuayene: string;
+  tanilar: {
+    icd10Kodu: string;
+    taniAdi: string;
+    taniTipi: 'ana' | 'yan' | 'komplikasyon';
+  }[];
+  tedaviPlani: string;
+  receteler: {
+    ilacAdi: string;
+    dozaj: string;
+    kullanim: string;
+    kutu: number;
+  }[];
+  kontrolTarihi?: Date;
+  notlar: string;
+}
+```
+
+## Geliştirme Adımları
+
+### Faz 1: Temel Altyapı (2-3 hafta)
+1. **Proje setup** ve teknoloji stack kurulumu
+2. **Kullanıcı authentication** sistemi
+3. **Temel UI/UX** tasarımı (Türkçe)
+4. **Ses kayıt** fonksiyonalitesi
+5. **Basic transkripsiyon** entegrasyonu
+
+### Faz 2: AI ve İşleme (3-4 hafta)
+1. **GPT entegrasyonu** ve Türkçe prompt engineering
+2. **Tıbbi terminoloji** database oluşturma
+3. **Note generation** algoritması
+4. **Doktor tarzı öğrenme** sistemi
+5. **Quality assurance** mekanizmaları
+
+### Faz 3: Türkiye Uyarlamaları (2-3 hafta)
+1. **SGK entegrasyonu** geliştirme
+2. **KVKK compliance** implementasyonu
+3. **Türk sağlık formatları** uyarlama
+4. **e-Nabız API** entegrasyonu (isteğe bağlı)
+5. **Yerelleştirme** tamamlama
+
+### Faz 4: Test ve Optimizasyon (1-2 hafta)
+1. **Hekim testleri** ve feedback toplama
+2. **Performance optimization**
+3. **Security audit**
+4. **Bug fixes** ve iyileştirmeler
+5. **Deployment** hazırlığı
+
+## Önemli Dependency'ler
+
+```json
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "typescript": "^5.0.0",
+    "express": "^4.18.0",
+    "mongodb": "^5.0.0",
+    "socket.io": "^4.7.0",
+    "openai": "^4.0.0",
+    "@azure/cognitiveservices-speech": "^1.30.0",
+    "crypto-js": "^4.1.1",
+    "multer": "^1.4.5",
+    "helmet": "^7.0.0",
+    "cors": "^2.8.5",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "dotenv": "^16.0.0"
+  }
+}
+```
+
+## Güvenlik ve Compliance
+
+### KVKK Uyumluluğu
+- **Explicit consent** mekanizmaları
+- **Data portability** fonksiyonları  
+- **Right to erasure** implementasyonu
+- **Privacy by design** architecture
+- **Regular compliance audits**
+
+### Sağlık Veri Güvenliği
+- **HIPAA benzeri** Türk standartları
+- **ISO 27001** uyumluluğu
+- **End-to-end encryption**
+- **Access logging** ve monitoring
+- **Backup ve disaster recovery**
+
+## Monetizasyon Modeli
+
+### Fiyatlandırma Katmanları
+1. **Temel Plan**: 500₺/ay (50 muayene/ay)
+2. **Profesyonel Plan**: 1200₺/ay (200 muayene/ay)
+3. **Kurumsal Plan**: 3000₺/ay (sınırsız + entegrasyonlar)
+4. **Özel Çözümler**: İsteğe göre fiyatlandırma
+
+### Özel Türkiye Özellikleri
+- **Stajyer ve asistan hekimler** için %50 indirim
+- **Devlet hastaneleri** için özel paketler
+- **Üniversite hastaneleri** akademik lisansları
+- **SGK anlaşmalı** kurumlar için özel fiyatlar
+
+## Başlangıç Komutu
+
+Bu prompt'u Replit'te kullanmak için:
+
+1. **Yeni Repl oluştur** (Node.js template)
+2. Bu prompt'u **AI assistant**'a ver
+3. **"Create a comprehensive Turkish medical AI scribe platform based on this specification"** komutunu kullan
+4. Geliştirme sürecinde **iteratif feedback** ver
+
+## Ek Notlar
+
+- **Pilot test** için 5-10 hekim ile başla
+- **Sürekli improvement** döngüsü kur
+- **Regulatory updates** için monitoring sistemi
+- **Customer support** Türkçe olarak sağla
+- **Training materials** ve documentation Türkçe hazırla
+
+Bu platform, Türk sağlık sisteminin ihtiyaçlarına özel olarak tasarlanmış, güvenli ve etkili bir çözüm sunacaktır.
