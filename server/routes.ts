@@ -28,7 +28,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/patients", async (req, res) => {
     try {
       console.log("Patient creation request:", req.body);
-      const patientData = insertPatientSchema.parse(req.body);
+      
+      // Tarih string'ini Date objesine çevir
+      const requestData = { ...req.body };
+      if (requestData.birthDate && typeof requestData.birthDate === 'string') {
+        requestData.birthDate = new Date(requestData.birthDate);
+      }
+      
+      const patientData = insertPatientSchema.parse(requestData);
       console.log("Validated patient data:", patientData);
       const patient = await storage.createPatient(patientData);
       res.json(patient);

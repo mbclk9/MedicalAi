@@ -30,14 +30,21 @@ export default function AddPatient() {
     mutationFn: async (patientData: typeof formData): Promise<Patient> => {
       const requestData = {
         ...patientData,
-        birthDate: patientData.birthDate ? new Date(patientData.birthDate) : undefined,
+        birthDate: patientData.birthDate ? patientData.birthDate : undefined,
         // Boş alanları temizle
         tcKimlik: patientData.tcKimlik || undefined,
         sgkNumber: patientData.sgkNumber || undefined,
         phone: patientData.phone || undefined,
       };
+      
+      console.log("Sending patient data:", requestData);
+      
       const response = await apiRequest("POST", "/api/patients", requestData);
-      return await response.json();
+      const result = await response.json();
+      
+      console.log("Patient creation response:", result);
+      
+      return result;
     },
     onSuccess: (newPatient: Patient) => {
       queryClient.invalidateQueries({ queryKey: ["/api/patients"] });
@@ -47,10 +54,31 @@ export default function AddPatient() {
       });
       setLocation("/");
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Patient creation error:", error);
+      
+      let errorMessage = "Hasta eklenirken bir hata oluştu.";
+      
+      if (error.message) {
+        try {
+          // API'den gelen error mesajını parse et
+          const errorData = JSON.parse(error.message.split(': ')[1] || '{}');
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+          if (errorData.errors && Array.isArray(errorData.errors)) {
+            errorMessage = errorData.errors.map((e: any) => e.message).join(', ');
+          }
+        } catch {
+          if (error.message.includes(':')) {
+            errorMessage = error.message.split(': ')[1] || errorMessage;
+          }
+        }
+      }
+      
       toast({
         title: "Hata",
-        description: "Hasta eklenirken bir hata oluştu.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
