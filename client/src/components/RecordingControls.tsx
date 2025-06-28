@@ -1,12 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Mic, 
   Square, 
   Play,
   Wand2,
-  FileText
+  FileText,
+  Edit3,
+  Check,
+  X
 } from "lucide-react";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -22,6 +26,10 @@ interface RecordingControlsProps {
 
 export function RecordingControls({ onTranscriptionReady, visitId, templateId }: RecordingControlsProps) {
   // Note generation is now automatic via useAudioRecording hook (Freed.ai style)
+  const [isEditingTranscript, setIsEditingTranscript] = useState(false);
+  const [editedTranscript, setEditedTranscript] = useState("");
+  const [editingSections, setEditingSections] = useState<{[key: string]: boolean}>({});
+  const [editedSections, setEditedSections] = useState<{[key: string]: string}>({});
   
   // Fetch visit data which includes medical note
   const { data: visitData, isLoading: isFetchingNote } = useQuery({
@@ -141,13 +149,67 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
           
           <div className="bg-gray-50 rounded-lg p-4 min-h-[120px] max-h-[300px] overflow-y-auto">
             {recordingState.transcription ? (
-              <div className="space-y-2">
-                <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
-                  {recordingState.transcription}
-                </p>
-                {recordingState.confidence > 0 && (
-                  <div className="text-xs text-gray-500">
-                    Güvenilirlik: {Math.round(recordingState.confidence * 100)}%
+              <div className="space-y-3">
+                {!isEditingTranscript ? (
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between">
+                      <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed flex-1 pr-3">
+                        {recordingState.transcription}
+                      </p>
+                      <Button
+                        onClick={() => {
+                          setIsEditingTranscript(true);
+                          setEditedTranscript(recordingState.transcription);
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        className="flex-shrink-0 h-8 w-8 p-0"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {recordingState.confidence > 0 && (
+                      <div className="text-xs text-gray-500">
+                        Güvenilirlik: {Math.round(recordingState.confidence * 100)}%
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={editedTranscript}
+                      onChange={(e) => setEditedTranscript(e.target.value)}
+                      className="min-h-[100px] text-sm"
+                      placeholder="Transkripsiyon metnini düzenleyin..."
+                    />
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        onClick={() => {
+                          // Update transcription and trigger new AI note generation
+                          if (onTranscriptionReady) {
+                            onTranscriptionReady(editedTranscript);
+                          }
+                          setIsEditingTranscript(false);
+                          // Note: The useAudioRecording hook will automatically regenerate the note
+                        }}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        Kaydet
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setIsEditingTranscript(false);
+                          setEditedTranscript("");
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        İptal
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
