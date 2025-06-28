@@ -119,6 +119,12 @@ Bu platform, Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarına uygun ol
 ## Değişiklik Geçmişi
 ```
 Türkiye Sağlık Bakanlığı Uyumlu Platform Güncellemeleri:
+- 28 Haziran 2025: Hasta yönetimi ve UI iyileştirmeleri
+  * Hasta listesi sayfası eklendi (grid tasarım, arama, silme)
+  * Sidebar yeniden düzenlendi - Muayene ve Hasta ayrı bölümler
+  * Hasta seçili muayene başlatma özelliği
+  * Claude Anthropic API entegrasyonu tamamlandı
+  * Son muayene silme özelliği eklendi
 - 27 Haziran 2025: Platform Türkiye sağlık standartlarına uygun hale getirildi
   * KVKK uyumlu ses kayıt sistemi
   * T.C. Sağlık Bakanlığı SOAP formatı uygulandı

@@ -199,10 +199,10 @@ export default function NewVisit() {
               </Link>
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900">
-                  Yeni Muayene Başlat
+                  {selectedPatient ? `${selectedPatient.name} ${selectedPatient.surname} - Yeni Muayene` : 'Yeni Muayene Başlat'}
                 </h2>
                 <p className="text-sm text-gray-600">
-                  Hasta ve şablon seçimi yaparak muayeneye başlayın
+                  {selectedPatient ? 'Şablon seçimi yaparak muayeneye başlayın' : 'Hasta ve şablon seçimi yaparak muayeneye başlayın'}
                 </p>
               </div>
             </div>
@@ -225,22 +225,47 @@ export default function NewVisit() {
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="patient-select">Hasta</Label>
-                      <Select onValueChange={(value) => {
-                        const patient = patients.find(p => p.id === parseInt(value));
-                        setSelectedPatient(patient || null);
-                      }}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Hasta seçin..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {patients.map((patient) => (
-                            <SelectItem key={patient.id} value={patient.id.toString()}>
-                              {patient.name} {patient.surname}
-                              {patient.tcKimlik && ` - TC: ${patient.tcKimlik}`}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {selectedPatient ? (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-blue-900">
+                                {selectedPatient.name} {selectedPatient.surname}
+                              </p>
+                              {selectedPatient.tcKimlik && (
+                                <p className="text-sm text-blue-700 font-mono">
+                                  TC: {selectedPatient.tcKimlik}
+                                </p>
+                              )}
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => setSelectedPatient(null)}
+                              className="text-blue-700 hover:text-blue-900"
+                            >
+                              Değiştir
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Select onValueChange={(value) => {
+                          const patient = patients.find(p => p.id === parseInt(value));
+                          setSelectedPatient(patient || null);
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Hasta seçin..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {patients.map((patient) => (
+                              <SelectItem key={patient.id} value={patient.id.toString()}>
+                                {patient.name} {patient.surname}
+                                {patient.tcKimlik && ` - TC: ${patient.tcKimlik}`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
 
                     <div>
