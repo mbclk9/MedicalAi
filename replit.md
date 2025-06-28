@@ -119,6 +119,12 @@ Bu platform, Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarına uygun ol
 ## Değişiklik Geçmişi
 ```
 Türkiye Sağlık Bakanlığı Uyumlu Platform Güncellemeleri:
+- 28 Haziran 2025: Aynı Sayfa Tıbbi Not Sistemi
+  * NewVisit sayfasında ses kaydı sonrası aynı sayfada tıbbi not görüntüleme
+  * Hasta bilgileri (ad, soyad, TC kimlik) ile entegre not gösterimi
+  * PDF formatına uygun profesyonel Türkçe SOAP yapısı
+  * Bölümlenmiş tıbbi not editörleme (Subjektif, Objektif, Değerlendirme)
+  * Freed.ai akışı: Kayıt → Transkripsiyon → Otomatik Not Oluşturma (aynı sayfa)
 - 28 Haziran 2025: Freed.ai Tarzında Otomatik AI Not Oluşturma
   * useAudioRecording hook'u Freed.ai akışı için genişletildi
   * Transkripsiyon sonrası otomatik AI not oluşturma (manuel buton kaldırıldı)
