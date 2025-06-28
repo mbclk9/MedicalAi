@@ -9,9 +9,6 @@ import {
   Plus, 
   Search, 
   FileText, 
-  Heart, 
-  UserCheck, 
-  Baby, 
   Settings,
   FilePlus2,
   Users
@@ -76,37 +73,59 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="p-6 border-b border-gray-200 space-y-3">
-        <Link href="/visit/new">
-          <Button className="w-full medical-gradient text-white py-3 px-4 font-medium hover:opacity-90 transition-opacity">
-            <Plus className="mr-2 h-4 w-4" />
-            Yeni Muayene Başlat
-          </Button>
-        </Link>
-        <Link href="/patients/add">
-          <Button variant="outline" className="w-full py-3 px-4 font-medium">
-            <FilePlus2 className="mr-2 h-4 w-4" />
-            Hasta Ekle
-          </Button>
-        </Link>
+      {/* Muayene Section */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="text-sm font-medium text-gray-900 mb-3">Muayene</div>
+        <div className="space-y-2">
+          <Link href="/visit/new">
+            <Button className="w-full medical-gradient text-white py-3 px-4 font-medium hover:opacity-90 transition-opacity">
+              <Plus className="mr-2 h-4 w-4" />
+              Yeni Muayene Başlat
+            </Button>
+          </Link>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input 
+              type="text" 
+              placeholder="Muayene ara..." 
+              className="pl-10"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Search */}
+      {/* Hasta Section */}
       <div className="p-6 border-b border-gray-200">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input 
-            type="text" 
-            placeholder="Hasta adı ile arama yapın..." 
-            className="pl-10"
-          />
+        <div className="text-sm font-medium text-gray-900 mb-3">Hasta</div>
+        <div className="space-y-2">
+          <Link href="/patients/add">
+            <Button variant="outline" className="w-full py-2 px-4 font-medium">
+              <FilePlus2 className="mr-2 h-4 w-4" />
+              Hasta Ekle
+            </Button>
+          </Link>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input 
+              type="text" 
+              placeholder="Hasta ara..." 
+              className="pl-10"
+            />
+          </div>
+          <Link href="/patients" className={`flex items-center space-x-3 px-3 py-2 rounded-lg ${
+            location === "/patients" 
+              ? "bg-blue-50 text-primary" 
+              : "text-gray-700 hover:bg-gray-100"
+          }`}>
+            <Users className="h-4 w-4" />
+            <span>Hasta Listesi</span>
+          </Link>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-6 space-y-1 overflow-y-auto">
-        <div className="text-sm font-medium text-gray-900 mb-4">Notlarım</div>
+        <div className="text-sm font-medium text-gray-900 mb-4">Dashboard</div>
         
         <Link href="/" className={`flex items-center space-x-3 px-3 py-2 rounded-lg ${
           location === "/" 
@@ -114,44 +133,17 @@ export function Sidebar() {
             : "text-gray-700 hover:bg-gray-100"
         }`}>
           <FileText className="h-4 w-4" />
-          <span>Tüm Notlar</span>
+          <span>Tüm Muayeneler</span>
           <Badge variant="secondary" className="ml-auto">
             {recentVisits.length}
           </Badge>
         </Link>
 
-        <Link href="/patients" className={`flex items-center space-x-3 px-3 py-2 rounded-lg ${
-          location === "/patients" 
-            ? "bg-blue-50 text-primary" 
-            : "text-gray-700 hover:bg-gray-100"
-        }`}>
-          <Users className="h-4 w-4" />
-          <span>Hasta Listesi</span>
-        </Link>
-        
-        <a href="#" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <Heart className="h-4 w-4" />
-          <span>Kardiyoloji</span>
-          <span className="ml-auto text-gray-400 text-xs">{specialtyStats.Kardiyoloji}</span>
-        </a>
-        
-        <a href="#" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <UserCheck className="h-4 w-4" />
-          <span>İç Hastalıkları</span>
-          <span className="ml-auto text-gray-400 text-xs">{specialtyStats["İç Hastalıkları"]}</span>
-        </a>
-        
-        <a href="#" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <Baby className="h-4 w-4" />
-          <span>Pediatri</span>
-          <span className="ml-auto text-gray-400 text-xs">{specialtyStats.Pediatri}</span>
-        </a>
-
         <div className="pt-6 border-t border-gray-200 mt-6">
           <div className="text-sm font-medium text-gray-900 mb-4">Şablon Kütüphanesi</div>
           
           <Link href="/templates" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-            <FilePlus2 className="h-4 w-4" />
+            <Settings className="h-4 w-4" />
             <span>Şablon Yönetimi</span>
           </Link>
         </div>

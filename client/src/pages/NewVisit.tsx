@@ -30,6 +30,14 @@ export default function NewVisit() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const { data: patients = [] } = useQuery<Patient[]>({
+    queryKey: ["/api/patients"],
+  });
+
+  const { data: templates = [] } = useQuery<MedicalTemplate[]>({
+    queryKey: ["/api/templates"],
+  });
+
   // Get template ID and patient ID from URL if provided
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -50,14 +58,6 @@ export default function NewVisit() {
       }
     }
   }, [templates, patients]);
-
-  const { data: patients = [] } = useQuery<Patient[]>({
-    queryKey: ["/api/patients"],
-  });
-
-  const { data: templates = [] } = useQuery<MedicalTemplate[]>({
-    queryKey: ["/api/templates"],
-  });
 
   const createVisitMutation = useMutation({
     mutationFn: async (visitData: {
