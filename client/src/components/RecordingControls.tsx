@@ -9,7 +9,7 @@ import {
   FileText
 } from "lucide-react";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import type { MedicalNote } from "@/types/medical";
@@ -22,6 +22,20 @@ interface RecordingControlsProps {
 
 export function RecordingControls({ onTranscriptionReady, visitId, templateId }: RecordingControlsProps) {
   // Note generation is now automatic via useAudioRecording hook (Freed.ai style)
+  
+  // Fetch visit data which includes medical note
+  const { data: visitData, isLoading: isFetchingNote } = useQuery({
+    queryKey: [`/api/visits/${visitId}`],
+    queryFn: async () => {
+      if (!visitId) return null;
+      const response = await apiRequest("GET", `/api/visits/${visitId}`);
+      return response.json();
+    },
+    enabled: !!visitId,
+    refetchOnWindowFocus: false,
+  });
+  
+  const medicalNote = visitData?.medicalNote;
   
   const {
     recordingState,
@@ -125,11 +139,25 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
             </Badge>
           </div>
           
-          <div className="bg-gray-50 rounded-lg p-4 min-h-[120px]">
+          <div className="bg-gray-50 rounded-lg p-4 min-h-[120px] max-h-[300px] overflow-y-auto">
             {recordingState.transcription ? (
-              <p className="text-gray-700 whitespace-pre-wrap">
-                {recordingState.transcription}
-              </p>
+              <div className="space-y-2">
+                <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
+                  {recordingState.transcription}
+                </p>
+                {recordingState.confidence > 0 && (
+                  <div className="text-xs text-gray-500">
+                    Güvenilirlik: {Math.round(recordingState.confidence * 100)}%
+                  </div>
+                )}
+              </div>
+            ) : recordingState.isRecording ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="animate-pulse w-3 h-3 bg-red-500 rounded-full"></div>
+                <p className="text-gray-600 italic text-center">
+                  Canlı kayıt devam ediyor...
+                </p>
+              </div>
             ) : (
               <p className="text-gray-400 italic text-center">
                 Ses kaydı tamamlandıktan sonra metne dönüştürülen içerik burada görünecek
@@ -171,28 +199,140 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
                 </div>
               )}
             </div>
-          ) : noteGenerated ? (
-            <div className="bg-green-50 rounded-lg p-4 text-center">
-              <div className="flex items-center justify-center space-x-2 mb-2">
-                <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
-                  ✓ Tıbbi Not Otomatik Oluşturuldu
-                </Badge>
+          ) : noteGenerated && medicalNote ? (
+            <div className="space-y-4">
+              {/* Success Header */}
+              <div className="bg-green-50 rounded-lg p-3">
+                <div className="flex items-center justify-center space-x-2">
+                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                    ✓ Tıbbi Not Otomatik Oluşturuldu
+                  </Badge>
+                </div>
               </div>
-              <p className="text-green-700 text-sm">
-                AI not oluşturmayı tamamladı. Muayene detaylarında görüntüleyebilirsiniz.
-              </p>
-              <div className="mt-3">
+
+              {/* Freed.ai Style Sections */}
+              <div className="space-y-3">
+                {/* Visit Summary */}
+                {medicalNote.visitSummary && (
+                  <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-400">
+                    <h4 className="font-medium text-blue-900 mb-2">📋 Muayene Özeti</h4>
+                    <p className="text-blue-800 text-sm">{medicalNote.visitSummary}</p>
+                  </div>
+                )}
+
+                {/* Subjective Section */}
+                {medicalNote.subjective && (
+                  <div className="bg-orange-50 rounded-lg p-4 border-l-4 border-orange-400">
+                    <h4 className="font-medium text-orange-900 mb-2">🗣️ Subjektif (Hasta Anlatımı)</h4>
+                    <div className="space-y-2 text-sm">
+                      {medicalNote.subjective.complaint && (
+                        <div>
+                          <span className="font-medium text-orange-800">Ana Şikayet: </span>
+                          <span className="text-orange-700">{medicalNote.subjective.complaint}</span>
+                        </div>
+                      )}
+                      {medicalNote.subjective.currentComplaints && (
+                        <div>
+                          <span className="font-medium text-orange-800">Mevcut Şikayetler: </span>
+                          <span className="text-orange-700">{medicalNote.subjective.currentComplaints.substring(0, 150)}...</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Objective Section */}
+                {medicalNote.objective && (
+                  <div className="bg-purple-50 rounded-lg p-4 border-l-4 border-purple-400">
+                    <h4 className="font-medium text-purple-900 mb-2">🩺 Objektif (Muayene Bulguları)</h4>
+                    <div className="space-y-2 text-sm">
+                      {medicalNote.objective.physicalExam && (
+                        <div>
+                          <span className="font-medium text-purple-800">Fizik Muayene: </span>
+                          <span className="text-purple-700">{medicalNote.objective.physicalExam}</span>
+                        </div>
+                      )}
+                      {medicalNote.objective.vitalSigns && Object.keys(medicalNote.objective.vitalSigns).length > 0 && (
+                        <div>
+                          <span className="font-medium text-purple-800">Vital Bulgular: </span>
+                          <span className="text-purple-700">
+                            {Object.entries(medicalNote.objective.vitalSigns).map(([key, value]) => `${key}: ${value}`).join(', ')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Assessment Section */}
+                {medicalNote.assessment && (
+                  <div className="bg-red-50 rounded-lg p-4 border-l-4 border-red-400">
+                    <h4 className="font-medium text-red-900 mb-2">🔍 Değerlendirme</h4>
+                    <div className="space-y-2 text-sm">
+                      {medicalNote.assessment.general && (
+                        <div>
+                          <span className="font-medium text-red-800">Genel Değerlendirme: </span>
+                          <span className="text-red-700">{medicalNote.assessment.general}</span>
+                        </div>
+                      )}
+                      {medicalNote.assessment.diagnoses && medicalNote.assessment.diagnoses.length > 0 && (
+                        <div>
+                          <span className="font-medium text-red-800">Tanılar: </span>
+                          <span className="text-red-700">
+                            {medicalNote.assessment.diagnoses.map((d: any) => d.diagnosis).join(', ')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Plan Section */}
+                {medicalNote.plan && (
+                  <div className="bg-green-50 rounded-lg p-4 border-l-4 border-green-400">
+                    <h4 className="font-medium text-green-900 mb-2">📋 Plan</h4>
+                    <div className="space-y-2 text-sm">
+                      {medicalNote.plan.treatment && medicalNote.plan.treatment.length > 0 && (
+                        <div>
+                          <span className="font-medium text-green-800">Tedavi: </span>
+                          <span className="text-green-700">{medicalNote.plan.treatment.join(', ')}</span>
+                        </div>
+                      )}
+                      {medicalNote.plan.followUp && (
+                        <div>
+                          <span className="font-medium text-green-800">Takip: </span>
+                          <span className="text-green-700">{medicalNote.plan.followUp}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* View Full Note Button */}
+              <div className="text-center pt-3">
                 <Button
                   onClick={() => window.location.href = `/patient-note/${visitId}`}
                   variant="outline"
                   size="sm"
                   disabled={!visitId}
-                  className="text-green-700 border-green-300 hover:bg-green-100"
+                  className="text-blue-700 border-blue-300 hover:bg-blue-100"
                 >
                   <FileText className="h-4 w-4 mr-1" />
-                  Tıbbi Notu Görüntüle
+                  Detaylı Notu Görüntüle
                 </Button>
               </div>
+            </div>
+          ) : noteGenerated && !medicalNote ? (
+            <div className="bg-yellow-50 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800">
+                  ⏳ Not Yükleniyor...
+                </Badge>
+              </div>
+              <p className="text-yellow-700 text-sm">
+                Tıbbi not oluşturuldu, veriler yükleniyor...
+              </p>
             </div>
           ) : (
             <div className="bg-gray-50 rounded-lg p-4 text-center">
