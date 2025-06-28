@@ -5,7 +5,8 @@ import {
   Mic, 
   Square, 
   Play,
-  Wand2
+  Wand2,
+  FileText
 } from "lucide-react";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,7 +22,6 @@ interface RecordingControlsProps {
 
 export function RecordingControls({ onTranscriptionReady, visitId, templateId }: RecordingControlsProps) {
   // Note generation is now automatic via useAudioRecording hook (Freed.ai style)
-  const queryClient = useQueryClient();
   
   const {
     recordingState,
@@ -32,6 +32,7 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
     transcriptionError,
     isGeneratingNote,
     noteGenerationError,
+    noteGenerated,
   } = useAudioRecording(onTranscriptionReady, {
     visitId,
     templateId,
@@ -170,7 +171,7 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
                 </div>
               )}
             </div>
-          ) : recordingState.transcription && !isGeneratingNote ? (
+          ) : noteGenerated ? (
             <div className="bg-green-50 rounded-lg p-4 text-center">
               <div className="flex items-center justify-center space-x-2 mb-2">
                 <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
@@ -180,6 +181,18 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
               <p className="text-green-700 text-sm">
                 AI not oluşturmayı tamamladı. Muayene detaylarında görüntüleyebilirsiniz.
               </p>
+              <div className="mt-3">
+                <Button
+                  onClick={() => window.location.href = `/patient-note/${visitId}`}
+                  variant="outline"
+                  size="sm"
+                  disabled={!visitId}
+                  className="text-green-700 border-green-300 hover:bg-green-100"
+                >
+                  <FileText className="h-4 w-4 mr-1" />
+                  Tıbbi Notu Görüntüle
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="bg-gray-50 rounded-lg p-4 text-center">

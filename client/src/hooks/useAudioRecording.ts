@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { TranscriptionResult, RecordingState } from "@/types/medical";
 
@@ -18,7 +18,10 @@ export function useAudioRecording(
     transcription: "",
     confidence: 0,
   });
+  
+  const [noteGenerated, setNoteGenerated] = useState(false);
 
+  const queryClient = useQueryClient();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -56,6 +59,12 @@ export function useAudioRecording(
     },
     onSuccess: (note) => {
       console.log("Medical note auto-generated successfully:", note);
+      setNoteGenerated(true);
+      // Invalidate visit details to refresh the page and show the generated note
+      if (options?.visitId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/visits/${options.visitId}`] });
+        queryClient.invalidateQueries({ queryKey: ["/api/visits/recent"] });
+      }
     },
     onError: (error) => {
       console.error("Auto note generation failed:", error);
@@ -221,6 +230,7 @@ export function useAudioRecording(
       transcription: "",
       confidence: 0,
     });
+    setNoteGenerated(false);
     chunksRef.current = [];
   }, [stopRecording]);
 
@@ -242,5 +252,6 @@ export function useAudioRecording(
     transcriptionError: transcribeMutation.error,
     isGeneratingNote: generateNoteMutation.isPending,
     noteGenerationError: generateNoteMutation.error,
+    noteGenerated,
   };
 }
