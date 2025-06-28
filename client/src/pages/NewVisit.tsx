@@ -26,6 +26,8 @@ export default function NewVisit() {
   const [visitCreated, setVisitCreated] = useState(false);
   const [createdVisitId, setCreatedVisitId] = useState<number | null>(null);
   const [isGeneratingNote, setIsGeneratingNote] = useState(false);
+  const [generatedNote, setGeneratedNote] = useState<any>(null);
+  const [showMedicalNote, setShowMedicalNote] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -124,15 +126,15 @@ export default function NewVisit() {
       const response = await apiRequest("POST", "/api/generate-note", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Başarılı",
         description: "Tıbbi not başarıyla oluşturuldu.",
       });
-      // Navigate to the note editing page
-      if (createdVisitId) {
-        setLocation(`/visit/${createdVisitId}`);
-      }
+      // Show the medical note in the same page instead of navigating
+      setGeneratedNote(data);
+      setShowMedicalNote(true);
+      setIsGeneratingNote(false);
     },
     onError: (error) => {
       toast({
@@ -399,6 +401,212 @@ export default function NewVisit() {
                     </div>
                   </CardContent>
                 </Card>
+              )}
+
+              {/* Generated Medical Note */}
+              {showMedicalNote && generatedNote && (
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-center text-green-600">
+                        ✓ Tıbbi Not Başarıyla Oluşturuldu
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center space-y-2">
+                        <h3 className="font-bold text-lg">
+                          {selectedPatient?.name} {selectedPatient?.surname}
+                        </h3>
+                        <p className="text-gray-600">
+                          {getVisitTypeText(visitType)} - {selectedTemplate?.specialty}
+                        </p>
+                        {selectedPatient?.tcKimlik && (
+                          <p className="text-sm text-gray-500">TC: {selectedPatient.tcKimlik}</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Visit Summary */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-blue-600">Muayene Özeti</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-700 leading-relaxed">
+                        {generatedNote.visitSummary}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Subjective */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-purple-600">Subjektif</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">Ana Şikayet</h4>
+                        <p className="text-gray-700">{generatedNote.subjective?.complaint}</p>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">Mevcut Şikayetler</h4>
+                        <p className="text-gray-700 whitespace-pre-wrap">{generatedNote.subjective?.currentComplaints}</p>
+                      </div>
+                      
+                      {generatedNote.subjective?.medicalHistory && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Tıbbi Geçmiş</h4>
+                          <ul className="list-disc list-inside text-gray-700 space-y-1">
+                            {Array.isArray(generatedNote.subjective.medicalHistory) 
+                              ? generatedNote.subjective.medicalHistory.map((item: string, index: number) => (
+                                  <li key={index}>{item}</li>
+                                ))
+                              : <li>{generatedNote.subjective.medicalHistory}</li>
+                            }
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {generatedNote.subjective?.medications && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">İlaçlar</h4>
+                          <ul className="list-disc list-inside text-gray-700 space-y-1">
+                            {Array.isArray(generatedNote.subjective.medications) 
+                              ? generatedNote.subjective.medications.map((item: string, index: number) => (
+                                  <li key={index}>{item}</li>
+                                ))
+                              : <li>{generatedNote.subjective.medications}</li>
+                            }
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Objective */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-orange-600">Objektif</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {generatedNote.objective?.vitalSigns && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Vital Bulgular</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            {Object.entries(generatedNote.objective.vitalSigns).map(([key, value]) => (
+                              <div key={key} className="bg-gray-50 p-2 rounded">
+                                <span className="text-sm font-medium">{key}:</span> {value}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {generatedNote.objective?.physicalExam && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Fizik Muayene</h4>
+                          <p className="text-gray-700">{generatedNote.objective.physicalExam}</p>
+                        </div>
+                      )}
+                      
+                      {generatedNote.objective?.diagnosticResults && generatedNote.objective.diagnosticResults.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Tetkik Sonuçları</h4>
+                          {generatedNote.objective.diagnosticResults.map((result: any, index: number) => (
+                            <div key={index} className="mb-3">
+                              <h5 className="font-medium text-gray-800">{result.test}</h5>
+                              <ul className="list-disc list-inside text-gray-700 ml-4">
+                                {result.results.map((item: string, idx: number) => (
+                                  <li key={idx}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Assessment & Plan */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-red-600">Değerlendirme ve Plan</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">Genel Değerlendirme</h4>
+                        <p className="text-gray-700">{generatedNote.assessment?.general}</p>
+                      </div>
+                      
+                      {generatedNote.assessment?.diagnoses && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Tanılar</h4>
+                          {generatedNote.assessment.diagnoses.map((diagnosis: any, index: number) => (
+                            <div key={index} className="bg-red-50 p-3 rounded-lg">
+                              <p className="font-medium">{diagnosis.diagnosis}</p>
+                              {diagnosis.icd10Code && (
+                                <p className="text-sm text-gray-600">ICD-10: {diagnosis.icd10Code}</p>
+                              )}
+                              <span className={`inline-block px-2 py-1 text-xs rounded ${
+                                diagnosis.type === 'ana' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {diagnosis.type === 'ana' ? 'Ana Tanı' : diagnosis.type}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {generatedNote.plan?.treatment && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Tedavi Planı</h4>
+                          <ul className="list-disc list-inside text-gray-700 space-y-1">
+                            {generatedNote.plan.treatment.map((item: string, index: number) => (
+                              <li key={index}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {generatedNote.plan?.medications && generatedNote.plan.medications.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">İlaç Tedavisi</h4>
+                          <div className="space-y-2">
+                            {generatedNote.plan.medications.map((med: any, index: number) => (
+                              <div key={index} className="bg-blue-50 p-3 rounded-lg">
+                                <p className="font-medium">{med.name}</p>
+                                <p className="text-sm text-gray-600">
+                                  {med.dosage} - {med.frequency}
+                                  {med.duration && ` - ${med.duration}`}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {generatedNote.plan?.followUp && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Takip</h4>
+                          <p className="text-gray-700">{generatedNote.plan.followUp}</p>
+                        </div>
+                      )}
+                      
+                      {generatedNote.plan?.lifestyle && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Yaşam Tarzı Önerileri</h4>
+                          <ul className="list-disc list-inside text-gray-700 space-y-1">
+                            {generatedNote.plan.lifestyle.map((item: string, index: number) => (
+                              <li key={index}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               )}
 
               <Separator />
