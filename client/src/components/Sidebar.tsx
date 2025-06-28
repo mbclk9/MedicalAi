@@ -13,7 +13,8 @@ import {
   UserCheck, 
   Baby, 
   Settings,
-  FilePlus2 
+  FilePlus2,
+  Users
 } from "lucide-react";
 import type { Doctor, Visit } from "@/types/medical";
 
@@ -83,7 +84,7 @@ export function Sidebar() {
             Yeni Muayene Başlat
           </Button>
         </Link>
-        <Link href="/patient/add">
+        <Link href="/patients/add">
           <Button variant="outline" className="w-full py-3 px-4 font-medium">
             <FilePlus2 className="mr-2 h-4 w-4" />
             Hasta Ekle
@@ -117,6 +118,15 @@ export function Sidebar() {
           <Badge variant="secondary" className="ml-auto">
             {recentVisits.length}
           </Badge>
+        </Link>
+
+        <Link href="/patients" className={`flex items-center space-x-3 px-3 py-2 rounded-lg ${
+          location === "/patients" 
+            ? "bg-blue-50 text-primary" 
+            : "text-gray-700 hover:bg-gray-100"
+        }`}>
+          <Users className="h-4 w-4" />
+          <span>Hasta Listesi</span>
         </Link>
         
         <a href="#" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">

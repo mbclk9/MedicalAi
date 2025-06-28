@@ -30,17 +30,26 @@ export default function NewVisit() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get template ID from URL if provided
+  // Get template ID and patient ID from URL if provided
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const templateId = urlParams.get('template');
+    const patientId = urlParams.get('patientId');
+    
     if (templateId && templates.length > 0) {
       const template = templates.find(t => t.id === parseInt(templateId));
       if (template) {
         setSelectedTemplate(template);
       }
     }
-  }, []);
+    
+    if (patientId && patients.length > 0) {
+      const patient = patients.find(p => p.id === parseInt(patientId));
+      if (patient) {
+        setSelectedPatient(patient);
+      }
+    }
+  }, [templates, patients]);
 
   const { data: patients = [] } = useQuery<Patient[]>({
     queryKey: ["/api/patients"],

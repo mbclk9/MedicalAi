@@ -7,6 +7,7 @@ import Dashboard from "@/pages/Dashboard";
 import PatientNote from "@/pages/PatientNote";
 import NewVisit from "@/pages/NewVisit";
 import AddPatient from "@/pages/AddPatient";
+import PatientList from "@/pages/PatientList";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,7 +16,8 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/visit/new" component={NewVisit} />
       <Route path="/visit/:id" component={PatientNote} />
-      <Route path="/patient/add" component={AddPatient} />
+      <Route path="/patients" component={PatientList} />
+      <Route path="/patients/add" component={AddPatient} />
       <Route component={NotFound} />
     </Switch>
   );

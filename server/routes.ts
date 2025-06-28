@@ -24,6 +24,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete patient
+  app.delete("/api/patients/:id", async (req, res) => {
+    try {
+      const patientId = parseInt(req.params.id);
+      await storage.deletePatient(patientId);
+      res.json({ success: true, message: "Hasta kaydı silindi" });
+    } catch (error) {
+      console.error("Delete patient error:", error);
+      res.status(500).json({ message: "Hasta silinirken hata oluştu" });
+    }
+  });
+
   // Create patient
   app.post("/api/patients", async (req, res) => {
     try {

@@ -12,6 +12,7 @@ export interface IStorage {
   getPatient(id: number): Promise<Patient | undefined>;
   getPatients(): Promise<Patient[]>;
   createPatient(patient: InsertPatient): Promise<Patient>;
+  deletePatient(id: number): Promise<void>;
   
   // Visit management
   getVisit(id: number): Promise<Visit | undefined>;

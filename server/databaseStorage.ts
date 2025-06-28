@@ -153,6 +153,24 @@ export class DatabaseStorage implements IStorage {
     return newPatient;
   }
 
+  async deletePatient(id: number): Promise<void> {
+    await this.initialize();
+    // İlişkili kayıtları da silmeli: önce bu hastanın ziyaretlerini bul
+    const patientVisits = await db.select({ id: visits.id }).from(visits).where(eq(visits.patientId, id));
+    
+    // Her ziyaret için tıbbi notları ve ses kayıtlarını sil
+    for (const visit of patientVisits) {
+      await db.delete(medicalNotes).where(eq(medicalNotes.visitId, visit.id));
+      await db.delete(recordings).where(eq(recordings.visitId, visit.id));
+    }
+    
+    // Ziyaretleri sil
+    await db.delete(visits).where(eq(visits.patientId, id));
+    
+    // Son olarak hastayı sil
+    await db.delete(patients).where(eq(patients.id, id));
+  }
+
   // Visit management
   async getVisit(id: number): Promise<Visit | undefined> {
     await this.initialize();
