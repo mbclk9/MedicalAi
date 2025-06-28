@@ -3,7 +3,14 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { TranscriptionResult, RecordingState } from "@/types/medical";
 
-export function useAudioRecording(onTranscriptionReady?: (transcription: string) => void) {
+export function useAudioRecording(
+  onTranscriptionReady?: (transcription: string) => void,
+  options?: {
+    visitId?: number;
+    templateId?: number;
+    autoGenerateNote?: boolean;
+  }
+) {
   const [recordingState, setRecordingState] = useState<RecordingState>({
     isRecording: false,
     isPaused: false,
@@ -31,6 +38,27 @@ export function useAudioRecording(onTranscriptionReady?: (transcription: string)
     },
     onError: (error) => {
       console.error("Transcription mutation error:", error);
+    },
+  });
+
+  const generateNoteMutation = useMutation({
+    mutationFn: async (transcription: string) => {
+      if (!options?.visitId) throw new Error("Visit ID is required for note generation");
+      
+      console.log("Auto-generating medical note for transcription:", transcription.substring(0, 50) + "...");
+      
+      const response = await apiRequest("POST", "/api/generate-note", {
+        visitId: options.visitId,
+        templateId: options.templateId,
+        transcription,
+      });
+      return response.json();
+    },
+    onSuccess: (note) => {
+      console.log("Medical note auto-generated successfully:", note);
+    },
+    onError: (error) => {
+      console.error("Auto note generation failed:", error);
     },
   });
 
@@ -90,6 +118,12 @@ export function useAudioRecording(onTranscriptionReady?: (transcription: string)
               // Call the callback if provided
               if (onTranscriptionReady && result.text) {
                 onTranscriptionReady(result.text);
+              }
+              
+              // Auto-generate medical note if enabled (Freed.ai style)
+              if (options?.autoGenerateNote && result.text && options.visitId) {
+                console.log("Auto-triggering medical note generation (Freed.ai style)");
+                generateNoteMutation.mutate(result.text);
               }
             },
             onError: (error) => {
@@ -206,5 +240,7 @@ export function useAudioRecording(onTranscriptionReady?: (transcription: string)
     formatDuration,
     isTranscribing: transcribeMutation.isPending,
     transcriptionError: transcribeMutation.error,
+    isGeneratingNote: generateNoteMutation.isPending,
+    noteGenerationError: generateNoteMutation.error,
   };
 }

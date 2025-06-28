@@ -119,6 +119,12 @@ Bu platform, Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarına uygun ol
 ## Değişiklik Geçmişi
 ```
 Türkiye Sağlık Bakanlığı Uyumlu Platform Güncellemeleri:
+- 28 Haziran 2025: Freed.ai Tarzında Otomatik AI Not Oluşturma
+  * useAudioRecording hook'u Freed.ai akışı için genişletildi
+  * Transkripsiyon sonrası otomatik AI not oluşturma (manuel buton kaldırıldı)
+  * Claude API hatalarında OpenAI fallback sistemi
+  * Hasta listesinden direkt muayene başlatma özelliği
+  * Real-time loading durumları ve hata yönetimi
 - 28 Haziran 2025: Hasta yönetimi ve UI iyileştirmeleri
   * Hasta listesi sayfası eklendi (grid tasarım, arama, silme)
   * Sidebar yeniden düzenlendi - Muayene ve Hasta ayrı bölümler

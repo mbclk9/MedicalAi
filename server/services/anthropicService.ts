@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
 /*
 <important_code_snippet_instructions>
@@ -14,6 +15,10 @@ const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export interface MedicalNoteGeneration {
@@ -100,8 +105,38 @@ export class AnthropicService {
     } catch (error) {
       console.error('Claude AI Error:', error);
       
-      // Hata durumunda mock yanıt döndür
-      console.log('Claude AI: Falling back to template-based response due to error');
+      // First try OpenAI fallback
+      try {
+        console.log('Claude AI: Trying OpenAI fallback due to Claude API error');
+        
+        const openaiResponse = await openai.chat.completions.create({
+          model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+          messages: [
+            {
+              role: "system",
+              content: "Sen Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarında çalışan uzman bir tıbbi sekreter asistanısın. 6698 sayılı KVKK kapsamında hasta mahremiyetini koruyarak SOAP formatında tıbbi not oluşturuyorsun. Yanıtını JSON formatında ver."
+            },
+            {
+              role: "user",
+              content: this.createTurkishMedicalPrompt(transcription, templateStructure, specialty)
+            }
+          ],
+          response_format: { type: "json_object" },
+          max_tokens: 2000,
+        });
+
+        const openaiContent = openaiResponse.choices[0].message.content;
+        if (openaiContent) {
+          const result = JSON.parse(openaiContent) as MedicalNoteGeneration;
+          console.log('OpenAI Fallback: Successfully generated medical note');
+          return result;
+        }
+      } catch (openaiError) {
+        console.error('OpenAI Fallback Error:', openaiError);
+      }
+      
+      // Hata durumunda template-based yanıt döndür
+      console.log('AI Services: Falling back to template-based response due to all AI service errors');
       const lowerTranscription = transcription.toLowerCase();
       const hasChestPain = lowerTranscription.includes('göğüs ağrısı') || lowerTranscription.includes('chest pain');
       const hasHeadache = lowerTranscription.includes('baş ağrısı') || lowerTranscription.includes('headache');

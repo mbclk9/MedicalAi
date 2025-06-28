@@ -20,7 +20,7 @@ interface RecordingControlsProps {
 }
 
 export function RecordingControls({ onTranscriptionReady, visitId, templateId }: RecordingControlsProps) {
-  const [generatedNote, setGeneratedNote] = useState<MedicalNote | null>(null);
+  // Note generation is now automatic via useAudioRecording hook (Freed.ai style)
   const queryClient = useQueryClient();
   
   const {
@@ -30,28 +30,15 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
     formatDuration,
     isTranscribing,
     transcriptionError,
-  } = useAudioRecording(onTranscriptionReady);
-
-  const generateNoteMutation = useMutation({
-    mutationFn: async (transcription: string): Promise<MedicalNote> => {
-      if (!visitId) throw new Error("Visit ID is required");
-      
-      const response = await apiRequest("POST", "/api/generate-note", {
-        visitId,
-        templateId,
-        transcription,
-      });
-      return response.json();
-    },
-    onSuccess: (note) => {
-      setGeneratedNote(note);
-      // Invalidate visit details to refresh the page
-      queryClient.invalidateQueries({ queryKey: [`/api/visits/${visitId}`] });
-    },
-    onError: (error) => {
-      console.error("AI note generation failed:", error);
-    },
+    isGeneratingNote,
+    noteGenerationError,
+  } = useAudioRecording(onTranscriptionReady, {
+    visitId,
+    templateId,
+    autoGenerateNote: true, // Freed.ai style automatic note generation
   });
+
+  // Not generation is now automatic via useAudioRecording hook (Freed.ai style)
 
   const handleStartRecording = async () => {
     try {
@@ -157,56 +144,47 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
           <div className="flex items-center space-x-2 mb-4">
             <Wand2 className="h-5 w-5 text-blue-600" />
             <h3 className="text-lg font-medium text-gray-900">Tıbbi Not Oluşturma</h3>
-            {generateNoteMutation.isPending && (
+            {isGeneratingNote && (
               <Badge variant="outline" className="text-xs animate-pulse">
-                Oluşturuluyor...
+                Otomatik Oluşturuluyor...
               </Badge>
             )}
           </div>
           
-          {generatedNote ? (
-            <div className="bg-green-50 rounded-lg p-4 space-y-4">
-              <div className="flex items-center space-x-2">
-                <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
-                  Tıbbi Not Oluşturuldu ✓
-                </Badge>
+          {isGeneratingNote ? (
+            <div className="bg-blue-50 rounded-lg p-4 space-y-4">
+              <div className="flex items-center justify-center space-x-3">
+                <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                <p className="text-blue-700 font-medium">
+                  AI otomatik tıbbi not oluşturuyor...
+                </p>
               </div>
               
-              <div className="text-sm space-y-2">
-                <div><strong>Özet:</strong> {generatedNote.visitSummary}</div>
-                {generatedNote.subjective?.complaint && (
-                  <div><strong>Şikayet:</strong> {generatedNote.subjective.complaint}</div>
-                )}
-                {generatedNote.assessment?.general && (
-                  <div><strong>Değerlendirme:</strong> {generatedNote.assessment.general}</div>
-                )}
-              </div>
-            </div>
-          ) : recordingState.transcription ? (
-            <div className="bg-blue-50 rounded-lg p-4 text-center space-y-4">
-              <p className="text-gray-600 text-sm">
-                Metne dönüştürme tamamlandı! SOAP formatında tıbbi not oluşturmak için butona tıklayın.
+              <p className="text-gray-600 text-sm text-center">
+                Freed.ai tarzında: Transkripsiyon tamamlandı, AI hemen tıbbi not hazırlıyor
               </p>
               
-              <Button 
-                onClick={() => generateNoteMutation.mutate(recordingState.transcription)}
-                disabled={generateNoteMutation.isPending || !visitId}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Wand2 className="h-4 w-4 mr-2" />
-                {generateNoteMutation.isPending ? "Tıbbi Not Oluşturuluyor..." : "Tıbbi Not Oluştur"}
-              </Button>
-              
-              {generateNoteMutation.error && (
-                <div className="text-red-600 text-sm mt-2">
-                  AI not oluşturma hatası: {generateNoteMutation.error instanceof Error ? generateNoteMutation.error.message : String(generateNoteMutation.error)}
+              {noteGenerationError && (
+                <div className="text-red-600 text-sm text-center">
+                  AI not oluşturma hatası: {noteGenerationError instanceof Error ? noteGenerationError.message : String(noteGenerationError)}
                 </div>
               )}
+            </div>
+          ) : recordingState.transcription && !isGeneratingNote ? (
+            <div className="bg-green-50 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                  ✓ Tıbbi Not Otomatik Oluşturuldu
+                </Badge>
+              </div>
+              <p className="text-green-700 text-sm">
+                AI not oluşturmayı tamamladı. Muayene detaylarında görüntüleyebilirsiniz.
+              </p>
             </div>
           ) : (
             <div className="bg-gray-50 rounded-lg p-4 text-center">
               <p className="text-gray-500 text-sm">
-                Ses kaydı tamamlandığında AI otomatik tıbbi not oluşturabilir
+                Ses kaydı tamamlandığında AI otomatik tıbbi not oluşturacak
               </p>
             </div>
           )}

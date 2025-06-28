@@ -366,7 +366,11 @@ export default function NewVisit() {
               </Card>
 
               {/* Recording Controls */}
-              <RecordingControls onTranscriptionReady={handleTranscriptionReady} />
+              <RecordingControls 
+                onTranscriptionReady={handleTranscriptionReady}
+                visitId={createdVisitId ?? undefined}
+                templateId={selectedTemplate?.id}
+              />
 
               {/* Transcription Preview */}
               {transcription && (
