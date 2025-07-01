@@ -1,0 +1,312 @@
+# 🩺 TıpScribe - AI Destekli Tıbbi Transkripsiyon Sistemi
+
+> Modern teknolojilerle geliştirilmiş, güvenli ve etkili tıbbi not alma platformu
+
+## 📋 Özellikler
+
+- 🎤 **Gerçek Zamanlı Transkripsiyon** - Deepgram API ile %95+ doğruluk
+- 🤖 **AI Destekli Not Oluşturma** - OpenAI GPT-4 ile yapılandırılmış tıbbi notlar
+- 👥 **Hasta Yönetimi** - Kapsamlı hasta kayıt sistemi
+- 🔒 **Güvenlik** - JWT auth + KVKK uyumlu veri koruması
+- 📱 **Modern UI** - Responsive tasarım + shadcn/ui
+- ⚡ **Yüksek Performans** - React 18 + TypeScript + Vite
+
+## 🛠 Teknoloji Stack
+
+### Backend
+```
+Node.js 18+ + TypeScript
+Express.js + Prisma ORM
+PostgreSQL 15+
+Socket.io (Real-time)
+Deepgram API + OpenAI API
+JWT Authentication
+```
+
+### Frontend
+```
+React 18 + TypeScript
+Vite + Tailwind CSS
+shadcn/ui Components
+Zustand State Management
+React Hook Form + Zod
+Socket.io Client
+```
+
+## 🚀 Hızlı Başlangıç
+
+### 1. Gereksinimler
+```bash
+Node.js 18+
+PostgreSQL 15+
+Git
+VS Code (önerilen)
+```
+
+### 2. Projeyi Klonlayın
+```bash
+git clone <repository-url>
+cd tipscribe
+```
+
+### 3. Backend Kurulumu
+```bash
+cd backend
+npm install
+cp .env.example .env
+# .env dosyasını düzenleyin
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
+
+### 4. Frontend Kurulumu
+```bash
+cd ../frontend
+npm install
+cp .env.example .env
+# .env dosyasını düzenleyin
+npm run dev
+```
+
+### 5. Veritabanı Kurulumu
+```sql
+-- PostgreSQL'e bağlanın
+psql -U postgres
+
+-- Veritabanı oluşturun
+CREATE DATABASE tipscribe_db;
+CREATE USER tipscribe_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE tipscribe_db TO tipscribe_user;
+```
+
+## 🔧 Konfigürasyon
+
+### Backend Environment (.env)
+```env
+# Database
+DATABASE_URL="postgresql://tipscribe_user:your_password@localhost:5432/tipscribe_db"
+
+# JWT
+JWT_SECRET="your-super-secret-jwt-key-here"
+JWT_EXPIRES_IN="7d"
+
+# Server
+PORT=5000
+NODE_ENV="development"
+
+# APIs
+DEEPGRAM_API_KEY="your_deepgram_api_key"
+OPENAI_API_KEY="your_openai_api_key"
+
+# CORS
+FRONTEND_URL="http://localhost:3000"
+```
+
+### Frontend Environment (.env)
+```env
+VITE_API_URL=http://localhost:5000/api
+VITE_SOCKET_URL=http://localhost:5000
+VITE_APP_NAME="TıpScribe"
+```
+
+## 📚 API Endpoints
+
+### Authentication
+```
+POST /api/auth/register - Kullanıcı kaydı
+POST /api/auth/login    - Giriş yapma
+POST /api/auth/logout   - Çıkış yapma
+```
+
+### Recordings
+```
+POST /api/recordings/upload     - Ses dosyası yükleme
+GET  /api/recordings           - Kayıtları listele
+GET  /api/recordings/:id       - Kayıt detayı
+DELETE /api/recordings/:id     - Kayıt silme
+```
+
+### Medical Notes
+```
+POST /api/medical-notes                    - Not oluşturma
+GET  /api/medical-notes                   - Notları listele
+POST /api/medical-notes/generate-ai-note  - AI not oluşturma
+PUT  /api/medical-notes/:id               - Not güncelleme
+```
+
+### Patients
+```
+POST /api/patients     - Hasta ekleme
+GET  /api/patients     - Hasta listesi
+GET  /api/patients/:id - Hasta detayı
+PUT  /api/patients/:id - Hasta güncelleme
+```
+
+## 🔄 Geliştirme Workflow
+
+### 1. Development Server Başlatma
+```bash
+# Backend (Terminal 1)
+cd backend && npm run dev
+
+# Frontend (Terminal 2)
+cd frontend && npm run dev
+```
+
+### 2. Database İşlemleri
+```bash
+# Yeni migration oluşturma
+npm run db:migrate
+
+# Prisma Studio açma
+npm run db:studio
+
+# Seed data ekleme
+npm run db:seed
+```
+
+### 3. Build ve Deployment
+```bash
+# Backend build
+cd backend && npm run build
+
+# Frontend build
+cd frontend && npm run build
+```
+
+## 🧪 Test Kullanıcıları
+
+```
+Admin:
+Email: admin@tipscribe.com
+Şifre: admin123
+
+Doktor:
+Email: doktor@tipscribe.com
+Şifre: doctor123
+```
+
+## 📁 Proje Yapısı
+
+```
+tipscribe/
+├── backend/
+│   ├── src/
+│   │   ├── controllers/     # API kontrolcüleri
+│   │   ├── middleware/      # Auth ve validasyon
+│   │   ├── routes/          # API route'ları
+│   │   ├── services/        # İş mantığı servisleri
+│   │   ├── websocket/       # Socket.io handler'ları
+│   │   └── server.ts        # Ana server dosyası
+│   ├── prisma/             # Database schema ve migrations
+│   └── uploads/            # Yüklenen dosyalar
+├── frontend/
+│   ├── src/
+│   │   ├── components/     # UI bileşenleri
+│   │   │   ├── ui/        # shadcn/ui bileşenleri
+│   │   │   └── features/  # Özellik bileşenleri
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── pages/         # Sayfa bileşenleri
+│   │   ├── services/      # API servisleri
+│   │   ├── stores/        # Zustand store'ları
+│   │   └── types/         # TypeScript tipleri
+└── docs/                  # Dokümantasyon
+```
+
+## 🐛 Debugging
+
+### Backend Debug
+```bash
+# Development mode ile başlatma
+npm run dev
+
+# Prisma Studio ile database görüntüleme
+npm run db:studio
+
+# Log seviyesi ayarlama
+DEBUG=* npm run dev
+```
+
+### Frontend Debug
+```bash
+# Development mode
+npm run dev
+
+# Type checking
+npm run type-check
+
+# Build preview
+npm run build && npm run preview
+```
+
+## 🔒 Güvenlik
+
+- JWT token tabanlı authentication
+- Bcrypt ile şifre hashleme
+- CORS koruması
+- Helmet.js güvenlik header'ları
+- Input validation (Zod)
+- Rate limiting (production için)
+
+## 📈 Performans
+
+- React 18 concurrent features
+- Code splitting ile lazy loading
+- Image optimization
+- Bundle size optimization
+- Database query optimization
+- Socket.io connection pooling
+
+## 🚀 Deployment
+
+### Docker ile Deployment
+```bash
+# Docker Compose ile çalıştırma
+docker-compose up -d
+```
+
+### Manual Deployment
+```bash
+# Backend
+cd backend
+npm run build
+npm start
+
+# Frontend
+cd frontend
+npm run build
+# Build dosyalarını web server'a deploy edin
+```
+
+## 🤝 Katkıda Bulunma
+
+1. Fork yapın
+2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
+3. Commit yapın (`git commit -m 'Add some amazing feature'`)
+4. Push yapın (`git push origin feature/amazing-feature`)
+5. Pull Request açın
+
+## 📞 Destek
+
+- 📧 Email: support@tipscribe.com
+- 📞 Telefon: +90 555 123 4567
+- 💬 Discord: [TıpScribe Community](discord-link)
+
+## 📝 Lisans
+
+Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
+
+---
+
+**⚡ Hızlı İpuçları:**
+- Mikrofonu hastaya yakın konumlandırın
+- Sessiz bir ortamda kayıt yapın
+- AI önerilerini gözden geçirin
+- Düzenli olarak backup alın
+
+**🔧 Sorun Giderme:**
+- API key'lerinizi kontrol edin
+- Database bağlantısını test edin
+- CORS ayarlarını gözden geçirin
+- Log dosyalarını inceleyin
