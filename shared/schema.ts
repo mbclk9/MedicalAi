@@ -17,8 +17,11 @@ export const patients = pgTable("patients", {
   surname: text("surname").notNull(),
   tcKimlik: text("tc_kimlik"),
   birthDate: timestamp("birth_date"),
+  gender: text("gender"), // 'erkek', 'kadın'
   sgkNumber: text("sgk_number"),
   phone: text("phone"),
+  email: text("email"),
+  address: text("address"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

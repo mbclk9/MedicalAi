@@ -119,6 +119,13 @@ Bu platform, Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarına uygun ol
 ## Değişiklik Geçmişi
 ```
 Türkiye Sağlık Bakanlığı Uyumlu Platform Güncellemeleri:
+- 28 Haziran 2025: Profesyonel Proje Reorganizasyonu ve Paylaşım Hazırlığı
+  * Kapsamlı README.md, API dokümantasyonu ve deployment kılavuzu
+  * client/src klasör yapısı: services/, types/, utils/ ayrımı
+  * server/scripts/ dizini: seed.ts, health-check.ts
+  * Docker ve docker-compose production kurulumu
+  * .env.example ve LICENSE dosyaları
+  * Profesyonel geliştirme workflow'u ve rehberler
 - 28 Haziran 2025: Aynı Sayfa Tıbbi Not Sistemi
   * NewVisit sayfasında ses kaydı sonrası aynı sayfada tıbbi not görüntüleme
   * Hasta bilgileri (ad, soyad, TC kimlik) ile entegre not gösterimi

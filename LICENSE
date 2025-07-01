@@ -1,0 +1,75 @@
+MIT License
+
+Copyright (c) 2025 TıpScribe
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Third-Party Licenses
+
+### Frontend Dependencies
+- React: MIT License
+- Tailwind CSS: MIT License  
+- shadcn/ui: MIT License
+- Lucide Icons: ISC License
+
+### Backend Dependencies
+- Express.js: MIT License
+- Drizzle ORM: Apache 2.0 License
+- TypeScript: Apache 2.0 License
+
+### AI Services
+- OpenAI API: Subject to OpenAI Terms of Service
+- Anthropic API: Subject to Anthropic Terms of Service
+- Deepgram API: Subject to Deepgram Terms of Service
+
+### Database
+- PostgreSQL: PostgreSQL License (similar to MIT)
+
+## Compliance Notice
+
+This software is designed to comply with:
+- Turkey Personal Data Protection Law (KVKK)
+- Turkish Ministry of Health regulations
+- Turkish Medical Association ethics guidelines
+- European GDPR standards (where applicable)
+
+Users are responsible for ensuring compliance with applicable laws and regulations in their jurisdiction.
+
+## Medical Disclaimer
+
+This software is a tool to assist medical professionals and is not intended to:
+- Replace professional medical judgment
+- Provide medical diagnosis or treatment recommendations
+- Be used without proper medical supervision
+
+Healthcare providers using this software remain solely responsible for patient care decisions and must verify all AI-generated content before clinical use.
+
+## Data Privacy
+
+The software processes medical data and audio recordings. Users must:
+- Obtain proper patient consent
+- Implement appropriate security measures
+- Follow local data protection regulations
+- Maintain audit trails as required by law
+
+## Support
+
+For license inquiries, contact: legal@tipscribe.com
