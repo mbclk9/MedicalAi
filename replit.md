@@ -6,25 +6,33 @@ Bu platform, Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarına uygun ol
 
 ## System Architecture
 
-### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Styling**: Tailwind CSS with shadcn/ui components
-- **State Management**: TanStack Query for server state management
-- **Routing**: Wouter for lightweight client-side routing
-- **Build Tool**: Vite for fast development and optimized builds
+### Professional Monorepo Structure
+- **Architecture**: Modern monorepo with workspace management
+- **Frontend**: `apps/frontend/` - React 18 with TypeScript and Vite
+- **Backend**: `apps/backend/` - Express server with TypeScript
+- **Shared Types**: `packages/types/` - Common TypeScript definitions
+- **Documentation**: `docs/` - Comprehensive project documentation
 
-### Backend Architecture
-- **Runtime**: Node.js with Express server
-- **Language**: TypeScript with ES modules  
+### Frontend Architecture (apps/frontend/)
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite with hot module replacement
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **State Management**: TanStack Query for server state
+- **Routing**: Wouter for lightweight client-side routing
+- **Path Aliases**: Clean imports with @ prefixes
+
+### Backend Architecture (apps/backend/)
+- **Runtime**: Node.js 20 with Express server
+- **Language**: TypeScript with ES modules
 - **API Style**: RESTful endpoints with JSON responses
 - **File Upload**: Multer for audio file handling
 - **Session Management**: Express sessions with PostgreSQL store
+- **Database**: Drizzle ORM with PostgreSQL
 
-### Database Layer
-- **ORM**: Drizzle ORM for type-safe database operations
-- **Database**: PostgreSQL (configured via Neon serverless)
-- **Schema Management**: Drizzle migrations with push-based deployment
-- **Connection**: Connection pooling via @neondatabase/serverless
+### Shared Packages (packages/)
+- **Types**: Centralized TypeScript definitions and database schema
+- **Schema**: Drizzle ORM models with Zod validation
+- **Configuration**: Shared build and development settings
 
 ## Key Components
 
