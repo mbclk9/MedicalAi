@@ -10,6 +10,7 @@ import transcriptionRoutes from "./routes/transcription";
 // Import middleware
 import { generalRateLimit } from "./middleware/rateLimit";
 import { storage } from "./database/storage";
+import { anthropicService } from "./services/anthropicService";
 
 const app = express();
 
@@ -135,6 +136,59 @@ app.get("/api/templates", async (req, res) => {
   }
 });
 
+// Legacy generate-note endpoint (redirects to medical module)
+app.post("/api/generate-note", async (req, res) => {
+  try {
+    const { transcription, templateId, visitId } = req.body;
+    
+    if (!transcription || !visitId) {
+      return res.status(400).json({ message: "Transcription and visitId are required" });
+    }
+
+    let templateStructure: any = {};
+    let specialty = "Genel Tıp";
+    
+    if (templateId) {
+      const template = await storage.getTemplate(templateId);
+      if (template) {
+        templateStructure = template.structure;
+        specialty = template.specialty;
+      }
+    }
+
+    const medicalNote = await anthropicService.generateMedicalNote(
+      transcription, 
+      templateStructure, 
+      specialty
+    );
+
+    // Save the generated note
+    const noteData = {
+      visitId: parseInt(visitId),
+      transcription,
+      visitSummary: medicalNote.visitSummary,
+      subjective: medicalNote.subjective,
+      objective: medicalNote.objective,
+      assessment: medicalNote.assessment,
+      plan: medicalNote.plan,
+    };
+
+    const existingNote = await storage.getMedicalNote(parseInt(visitId));
+    let savedNote;
+    
+    if (existingNote) {
+      savedNote = await storage.updateMedicalNote(parseInt(visitId), noteData);
+    } else {
+      savedNote = await storage.createMedicalNote(noteData);
+    }
+
+    res.json(savedNote);
+  } catch (error) {
+    console.error("Medical note generation error:", error);
+    res.status(500).json({ message: "Failed to generate medical note" });
+  }
+});
+
 // Health check endpoint
 app.get("/api/health", async (req, res) => {
   try {
@@ -166,11 +220,11 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-export function createApp(): Express {
+export function createApp() {
   return app;
 }
 
-export function registerRoutes(app: Express): Promise<Server> {
+export function registerRoutes(app: any): Promise<Server> {
   const server = createServer(app);
   return Promise.resolve(server);
 }

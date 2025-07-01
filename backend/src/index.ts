@@ -4,14 +4,13 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = createApp();
 
 (async () => {
+  const server = app.listen(5000, "0.0.0.0", () => {
+    log(`serving on port 5000`);
+  });
+
   if (app.get("env") === "development") {
-    await setupVite(app, undefined);
+    await setupVite(app, server);
   } else {
     serveStatic(app);
   }
-
-  const PORT = Number(process.env.PORT) || 5000;
-  app.listen(PORT, "0.0.0.0", () => {
-    log(`serving on port ${PORT}`);
-  });
 })();

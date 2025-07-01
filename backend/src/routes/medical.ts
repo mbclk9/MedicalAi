@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { storage } from '../database/storage';
 import { anthropicService } from '../services/anthropicService';
-import { insertMedicalNoteSchema } from '../schemas/shared/schema';
+import { insertMedicalNoteSchema } from '../../../shared/schema';
 import { validateBody, validateParams } from '../middleware/validation';
 import { aiRateLimit } from '../middleware/rateLimit';
 import { z } from 'zod';
@@ -104,6 +104,34 @@ router.get('/templates/specialty/:specialty', validateParams(z.object({ specialt
   } catch (error) {
     console.error("Get templates by specialty error:", error);
     res.status(500).json({ error: "Failed to fetch templates" });
+  }
+});
+
+// Get templates
+router.get('/templates', async (req, res) => {
+  try {
+    const templates = await storage.getTemplates();
+    res.json(templates);
+  } catch (error) {
+    console.error("Get templates error:", error);
+    res.status(500).json({ error: "Failed to fetch templates" });
+  }
+});
+
+// Get template by ID
+router.get('/templates/:id', validateParams(z.object({ id: z.string() })), async (req, res) => {
+  try {
+    const templateId = parseInt(req.params.id);
+    const template = await storage.getTemplate(templateId);
+    
+    if (!template) {
+      return res.status(404).json({ error: "Template not found" });
+    }
+    
+    res.json(template);
+  } catch (error) {
+    console.error("Get template error:", error);
+    res.status(500).json({ error: "Failed to fetch template" });
   }
 });
 
