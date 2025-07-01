@@ -4,8 +4,9 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = createApp();
 
 (async () => {
-  const server = app.listen(5000, "0.0.0.0", () => {
-    log(`serving on port 5000`);
+  const port = process.env.PORT || 5000;
+  const server = app.listen(port, "0.0.0.0", () => {
+    log(`serving on port ${port}`);
   });
 
   if (app.get("env") === "development") {

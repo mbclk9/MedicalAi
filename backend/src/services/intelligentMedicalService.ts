@@ -41,7 +41,19 @@ export class IntelligentMedicalService {
   private extractChiefComplaint(transcription: string): string {
     const text = transcription.toLowerCase();
     
-    // Şikayet belirten ifadeleri ara
+    console.log(`[DEBUG] Analyzing transcription for chief complaint: "${text.substring(0, 100)}..."`);
+    
+    // Kalp çarpıntısı için özel pattern'ler ekle - EN ÖNCE KONTROL ET
+    if (/çarpıntı|kalp.*?çarp|kalbim.*?çarp|çarpıyor/.test(text)) {
+      console.log(`[DEBUG] Found palpitation pattern: kalp çarpıntısı`);
+      return "kalp çarpıntısı";
+    }
+    if (/çok.*?hızlı|hızlı.*?çarp|çok.*?çarp/.test(text)) {
+      console.log(`[DEBUG] Found fast heartbeat pattern: kalp çarpıntısı ve hızlanma`);
+      return "kalp çarpıntısı ve hızlanma";
+    }
+    
+    // Diğer şikayet belirten ifadeleri ara
     const complaintPatterns = [
       /göğsümde.*?ağrı|göğüs.*?ağrı/,
       /baş.*?ağrı|başım.*?ağrı/,
@@ -57,14 +69,16 @@ export class IntelligentMedicalService {
     ];
 
     const complaints = {
+      'kalp çarpıntısı': /çarpıntı|kalp.*?çarp|kalbim.*?çarp|çarpıyor|çok.*?hızlı|hızlı.*?çarp/,
       'göğüs ağrısı': /göğsümde.*?ağrı|göğüs.*?ağrı|göğsümde.*?baskı|göğsümde.*?sıkış/,
+      'baş dönmesi': /baş.*?dön|başım.*?dön|dönme|bayıl/,
+      'nefes darlığı': /nefes.*?daral|nefesim.*?daral|nefes.*?alma.*?güçlük|nefes.*?sıkış/,
+      'huzursuzluk': /huzursuz|anksiyete|kaygı|korku/,
       'baş ağrısı': /baş.*?ağrı|başım.*?ağrı/,
       'karın ağrısı': /karın.*?ağrı|karnım.*?ağrı/,
-      'nefes darlığı': /nefes.*?daralma|nefesim.*?daral|nefes.*?alma.*?güçlük/,
       'ateş': /ateş|ateşim|sıcaklık/,
       'öksürük': /öksür|öksürük/,
       'bulantı': /bulantı|mide.*?bulanma/,
-      'baş dönmesi': /baş.*?dön|baş.*?döndür/,
       'yorgunluk': /yorgun|halsiz|güçsüz/,
       'uyku problemi': /uyku.*?problem|uyuyam|uykusuzluk/,
       'iştah kaybı': /iştah.*?kayb|iştahım.*?yok/,
@@ -84,10 +98,16 @@ export class IntelligentMedicalService {
     const symptoms: string[] = [];
     
     const symptomMap = {
+      'kalp çarpıntısı': /çarpıntı|kalp.*?çarp|kalbim.*?çarp|çarpıyor|çok.*?hızlı/,
+      'stresle artan çarpıntı': /stres.*?çarp|stresliyken.*?çarp|kahve.*?çarp/,
+      'baş dönmesi': /baş.*?dön|başım.*?dön|dönme|bayıl/,
+      'nefes darlığı': /nefes.*?darl|nefesim.*?darl|huzursuzluk.*?nefes/,
+      'yaklaşık 2 aydır': /iki.*?ay|2.*?ay|yaklaşık.*?ay/,
+      'günde birkaç kez': /günde.*?kez|gün.*?kez|birkaç.*?kez/,
+      'psikiyatri takip': /psikiyatr|anksiyete|kaygı/,
       'göğüs ağrısı/baskısı': /göğsümde.*?ağrı|göğüs.*?ağrı|göğsümde.*?baskı/,
       'eforla artan ağrı': /merdiven.*?çık|yürü.*?ağrı|hareket.*?ağrı/,
       'sol kola yayılan ağrı': /sol.*?kol|kola.*?yayıl|koluma.*?vur/,
-      'nefes darlığı': /nefes.*?daral|nefesim.*?daral/,
       'dinlenmekle geçen': /dinlen.*?geç|dinleyince.*?geç/,
       '5-10 dakika süren': /beş.*?dakika|on.*?dakika|dakika.*?sür/,
       'baş ağrısı': /baş.*?ağrı|başım.*?ağrı/,
@@ -109,6 +129,21 @@ export class IntelligentMedicalService {
     const text = transcription.toLowerCase();
     const riskFactors: string[] = [];
     
+    // Kalp çarpıntısı için özel risk faktörleri
+    if (/stres|stresliyken|kaygı|anksiyete/.test(text)) {
+      riskFactors.push('Stres ve anksiyete öyküsü');
+    }
+    if (/kahve|kafein/.test(text)) {
+      riskFactors.push('Kafein tüketimi');
+    }
+    if (/psikiyatr|psikolog|ruhsal/.test(text)) {
+      riskFactors.push('Psikiyatrik takip öyküsü');
+    }
+    if (/tiroid|tiroit/.test(text)) {
+      riskFactors.push('Tiroid hastalığı sorgulanmalı');
+    }
+    
+    // Genel kardiyak risk faktörleri
     if (/baba.*?kalp|aile.*?kalp|kalp.*?kriz/.test(text)) {
       riskFactors.push('Aile öyküsünde kalp hastalığı');
     }
@@ -144,6 +179,17 @@ export class IntelligentMedicalService {
   private generateDiagnosis(transcription: string, specialty: string): string {
     const text = transcription.toLowerCase();
     
+    // Kalp çarpıntısı için özel tanı
+    if (/çarpıntı|kalp.*?çarp|kalbim.*?çarp|çarpıyor/.test(text)) {
+      if (/stres|anksiyete|kaygı/.test(text)) {
+        return "Palpitasyon, muhtemelen anksiyete ve stress ile ilişkili";
+      }
+      if (/tiroid|tiroit/.test(text)) {
+        return "Palpitasyon, tiroid fonksiyon bozukluğu ekarte edilmeli";
+      }
+      return "Palpitasyon, etiyoloji araştırılacak";
+    }
+    
     if (/göğüs.*?ağrı|göğsümde.*?baskı/.test(text)) {
       if (/kalp|kardiyak/.test(text)) {
         return "Atipik göğüs ağrısı, kardiyak etiyoloji araştırılmalı";
@@ -164,7 +210,24 @@ export class IntelligentMedicalService {
     const text = transcription.toLowerCase();
     const treatments: string[] = [];
     
-    if (/göğüs.*?ağrı|kalp/.test(text)) {
+    // Kalp çarpıntısı için özel tedavi planı
+    if (/çarpıntı|kalp.*?çarp|kalbim.*?çarp|çarpıyor/.test(text)) {
+      treatments.push("EKG çekildi/planlandı");
+      if (/24|yirmi dört|holter/.test(text)) {
+        treatments.push("24 saatlik Holter monitörizasyonu planlandı");
+      }
+      if (/tiroid|tiroit/.test(text)) {
+        treatments.push("Tiroid fonksiyon testleri tekrarlanacak");
+      }
+      if (/stres|anksiyete/.test(text)) {
+        treatments.push("Stres yönetimi ve anksiyete kontrolü");
+        treatments.push("Psikiyatri takibi devam edecek");
+      }
+      treatments.push("Kafein ve stimülan kısıtlaması önerildi");
+      treatments.push("Kardiyoloji kontrolü planlandı");
+    }
+    
+    if (/göğüs.*?ağrı|kalp/.test(text) && !/çarpıntı/.test(text)) {
       treatments.push("EKG ve Efor testi planlandı");
       treatments.push("Kardiyoloji konsültasyonu önerildi");
       treatments.push("Risk faktörlerinin modifikasyonu");

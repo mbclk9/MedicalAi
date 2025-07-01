@@ -127,6 +127,14 @@ Bu platform, Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarına uygun ol
 ## Değişiklik Geçmişi
 ```
 Türkiye Sağlık Bakanlığı Uyumlu Platform Güncellemeleri:
+- 1 Temmuz 2025: AI Çıktı Sistemi Tamamen Düzeltildi ✅
+  * Claude ve Deepgram API anahtarları güncellendi ve aktif
+  * Intelligent Medical Service geliştirildi - kalp çarpıntısı analizi
+  * Vite middleware sorunu çözüldü - API routing düzgün çalışıyor  
+  * Transkripsiyon → AI analiz → Tıbbi not sistemi başarıyla çalışıyor
+  * Pattern recognition: çarpıntı, stres, anksiyete, Holter tespiti
+  * Fallback AI sistemi: Claude/OpenAI hatalarında backup devreye giriyor
+  * Backend/frontend tamamen ayrıldı - profesyonel modüler yapı
 - 28 Haziran 2025: Profesyonel Proje Reorganizasyonu ve Paylaşım Hazırlığı
   * Kapsamlı README.md, API dokümantasyonu ve deployment kılavuzu
   * client/src klasör yapısı: services/, types/, utils/ ayrımı

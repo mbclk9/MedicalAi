@@ -143,61 +143,57 @@ export class AnthropicService {
   }
 
   private createTurkishMedicalPrompt(transcription: string, templateStructure: any, specialty: string): string {
-    return `
-Sen Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarında çalışan uzman bir tıbbi sekreter asistanısın.
+    return `Sen uzman bir tıbbi sekreter asistanısın. Aşağıdaki doktor-hasta konuşmasını analiz ederek T.C. Sağlık Bakanlığı standartlarında SOAP formatında tıbbi not oluşturacaksın.
 
-HASTA GİZLİLİĞİ UYARISI: Bu tıbbi kayıt 6698 sayılı KVKK kapsamında korunmaktadır.
-
-Verilen ${specialty} muayenesi transkripsiyon metnini analiz ederek T.C. Sağlık Bakanlığı tıbbi dokümantasyon standartlarına uygun SOAP formatında profesyonel tıbbi not oluştur.
-
-TRANSKRIPSIYON METNİ:
-"${transcription}"
+ÖNEMLI TALİMATLAR:
+- Transkripsiyon metnindeki GERÇEK bilgileri kullan
+- Hasta şikayetlerini hasta kendi sözleriyle yaz
+- Doktorun sorduğu soruları ve hastanın cevaplarını analiz et
+- İlaç isimleri, dozları, test sonuçları gibi medikal detayları aynen al
+- Türkçe tıbbi terminoloji kullan
 
 UZMANLIK ALANI: ${specialty}
 
-ŞABLON YAPISI:
-${JSON.stringify(templateStructure, null, 2)}
+DOKTOR-HASTA KONUŞMASI:
+"${transcription}"
 
-T.C. SAĞLIK BAKANLIĞI SOAP FORMATINDA JSON YANITI VER:
+Bu konuşmayı analiz ederek aşağıdaki JSON formatında tıbbi not oluştur. Konuşmada geçmeyen bilgileri uydurma, sadece GERÇEK BİLGİLERİ kullan:
 
 {
-  "visitSummary": "Hasta [yaş]/[cinsiyet], [ana şikayet] nedeniyle başvurdu. [Muayene türü] yapıldı. [Genel durum]",
+  "visitSummary": "Konuşmadan çıkarılan genel muayene özeti",
   "subjective": {
-    "complaint": "Hastanın ana şikayeti - kendi ifadesiyle",
-    "currentComplaints": "Mevcut hastalık öyküsü: şikayetin başlama zamanı, karakteri, süresi, etkileyen faktörler",
-    "medicalHistory": ["Diabetes mellitus", "Hipertansiyon", "Kalp hastalığı vb."],
-    "medications": ["İlaç adı - doz - kullanım şekli", "örn: Metformin 500mg 2x1"],
-    "socialHistory": "Sigara/alkol kullanımı, meslek, aile öyküsü",
-    "reviewOfSystems": "Konuşmada geçen sistem yakınmaları"
+    "complaint": "Hastanın bahsettiği ana şikayet (kendi sözleriyle)",
+    "currentComplaints": "Şikayetin detayları - ne zaman başladı, nasıl, hangi durumlarda artar",
+    "medicalHistory": ["Konuşmada bahsedilen geçmiş hastalıklar"],
+    "medications": ["Konuşmada bahsedilen ilaçlar"],
+    "socialHistory": "Konuşmada geçen sosyal öyküsü (sigara, meslek vs)",
+    "reviewOfSystems": "Bahsedilen diğer sistem şikayetleri"
   },
   "objective": {
     "vitalSigns": {
-      "bloodPressure": "120/80 mmHg",
-      "heartRate": "72/dk", 
-      "temperature": "36.5°C",
-      "respiratoryRate": "16/dk",
-      "oxygen": "SaO2: %98"
+      "Kan Basıncı": "Konuşmada geçiyorsa",
+      "Nabız": "Konuşmada geçiyorsa",
+      "Ateş": "Konuşmada geçiyorsa"
     },
-    "physicalExam": "Genel durum: [iyi/orta/kötü], Bilinç: [açık/kapalı], Sistem bazında fizik muayene bulguları",
+    "physicalExam": "Doktorun yaptığı fizik muayene bulguları",
     "diagnosticResults": [
       {
-        "test": "Laboratuvar/Görüntüleme test adı",
-        "results": ["Test sonuçları ve değerleri"]
+        "test": "İstenen/yapılan test adı",
+        "results": ["Test sonuçları"]
       }
     ]
   },
   "assessment": {
-    "general": "Klinik tablonun genel değerlendirmesi",
+    "general": "Doktorun değerlendirmesi",
     "diagnoses": [
       {
-        "diagnosis": "Türkçe tanı adı",
-        "icd10Code": "ICD-10 kodu",
+        "diagnosis": "Konuşmada geçen tanı",
         "type": "ana"
       }
     ]
   },
   "plan": {
-    "treatment": ["Medikal tedavi yaklaşımı", "Cerrahi girişim gereksinimi"],
+    "treatment": ["Önerilen tedavi"],
     "medications": [
       {
         "name": "Türkiye'de kullanılan ilaç adı",
