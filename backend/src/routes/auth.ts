@@ -1,11 +1,12 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
 // Get current user info
-router.get('/me', requireAuth, (req: AuthRequest, res) => {
-  res.json(req.user);
+router.get('/me', requireAuth, (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  res.json(authReq.user);
 });
 
 // Login endpoint (placeholder for future implementation)

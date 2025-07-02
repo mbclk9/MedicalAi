@@ -28,13 +28,13 @@ router.post('/generate-note', aiRateLimit, validateBody(z.object({
       template = await storage.getTemplate(templateId);
     }
     
-    const specialty = template?.specialty || "Dahiliye";
+    const specialty = (template as any)?.specialty || "Dahiliye";
     
     console.log(`Generating medical note for visit ${visitId}, specialty: ${specialty}`);
     
     const generatedNote = await anthropicService.generateMedicalNote(
       transcription,
-      template?.structure || {},
+      (template as any)?.structure || {},
       specialty
     );
     

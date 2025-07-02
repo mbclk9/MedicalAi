@@ -3,7 +3,22 @@
  * Centralized type definitions for the application
  */
 
-// Re-export shared schema types
+// Import and re-export shared schema types
+import type {
+  Doctor,
+  Patient,
+  Visit,
+  MedicalNote,
+  Recording,
+  MedicalTemplate,
+  InsertDoctor,
+  InsertPatient,
+  InsertVisit,
+  InsertMedicalNote,
+  InsertRecording,
+  InsertTemplate,
+} from '@shared/schema';
+
 export type {
   Doctor,
   Patient,
@@ -17,7 +32,7 @@ export type {
   InsertMedicalNote,
   InsertRecording,
   InsertTemplate,
-} from '../../../shared/schema.js';
+};
 
 // API Response Types
 export interface ApiResponse<T> {
