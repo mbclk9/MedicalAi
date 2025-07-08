@@ -6,14 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, User, Stethoscope, Clock } from "lucide-react";
+import { ArrowLeft, User, Stethoscope, Clock, UserPlus, AlertCircle, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 import { Sidebar } from "@/components/Sidebar";
 import { TemplateModal } from "@/components/TemplateModal";
 import { RecordingControls } from "@/components/RecordingControls";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Patient, MedicalTemplate } from "@/types/medical";
+import type { Patient, MedicalTemplate } from "@/types";
 
 export default function NewVisit() {
   const [, setLocation] = useLocation();
@@ -25,19 +25,38 @@ export default function NewVisit() {
   const [transcription, setTranscription] = useState<string>("");
   const [visitCreated, setVisitCreated] = useState(false);
   const [createdVisitId, setCreatedVisitId] = useState<number | null>(null);
-  const [isGeneratingNote, setIsGeneratingNote] = useState(false);
-  const [generatedNote, setGeneratedNote] = useState<any>(null);
-  const [showMedicalNote, setShowMedicalNote] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: patients = [] } = useQuery<Patient[]>({
+  const { 
+    data: patients = [], 
+    isLoading: isLoadingPatients,
+    error: patientsError,
+    refetch: refetchPatients 
+  } = useQuery<Patient[]>({
     queryKey: ["/api/patients"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/patients");
+      return response.json();
+    },
+    retry: 3,
+    refetchOnWindowFocus: false,
   });
 
-  const { data: templates = [] } = useQuery<MedicalTemplate[]>({
+  const { 
+    data: templates = [],
+    isLoading: isLoadingTemplates,
+    error: templatesError,
+    refetch: refetchTemplates 
+  } = useQuery<MedicalTemplate[]>({
     queryKey: ["/api/templates"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/templates");
+      return response.json();
+    },
+    retry: 3,
+    refetchOnWindowFocus: false,
   });
 
   // Get template ID and patient ID from URL if provided
@@ -68,21 +87,24 @@ export default function NewVisit() {
       templateId?: number;
       visitType: string;
     }) => {
+      console.log("Creating visit with data:", visitData);
       const response = await apiRequest("POST", "/api/visits", visitData);
       return response.json();
     },
     onSuccess: (visit) => {
+      console.log("Visit created successfully:", visit);
       setCreatedVisitId(visit.id);
       setVisitCreated(true);
       queryClient.invalidateQueries({ queryKey: ["/api/visits/recent"] });
       toast({
-        title: "Başarılı",
+        title: "✅ Başarılı",
         description: "Yeni muayene kaydı oluşturuldu.",
       });
     },
     onError: (error) => {
+      console.error("Create visit error:", error);
       toast({
-        title: "Hata",
+        title: "❌ Hata",
         description: "Muayene kaydı oluşturulurken hata oluştu: " + error.message,
         variant: "destructive",
       });
@@ -92,7 +114,7 @@ export default function NewVisit() {
   const handleStartVisit = async () => {
     if (!selectedPatient) {
       toast({
-        title: "Uyarı",
+        title: "⚠️ Uyarı",
         description: "Lütfen bir hasta seçin.",
         variant: "destructive",
       });
@@ -101,7 +123,7 @@ export default function NewVisit() {
 
     if (!selectedTemplate) {
       toast({
-        title: "Uyarı", 
+        title: "⚠️ Uyarı", 
         description: "Lütfen bir şablon seçin.",
         variant: "destructive",
       });
@@ -121,48 +143,29 @@ export default function NewVisit() {
     setShowTemplateModal(false);
   };
 
-  const generateNoteMutation = useMutation({
-    mutationFn: async (data: { transcription: string; visitId: number; templateId?: number }) => {
-      const response = await apiRequest("POST", "/api/generate-note", data);
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Başarılı",
-        description: "Tıbbi not başarıyla oluşturuldu.",
-      });
-      // Show the medical note in the same page instead of navigating
-      setGeneratedNote(data);
-      setShowMedicalNote(true);
-      setIsGeneratingNote(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Hata",
-        description: "Tıbbi not oluşturulurken hata oluştu: " + error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const handlePatientSelect = (value: string) => {
+    console.log("Patient select value:", value);
+    
+    // Boş değerleri kontrol et
+    if (!value || value === "" || value === "undefined") {
+      console.log("Invalid patient value, clearing selection");
+      setSelectedPatient(null);
+      return;
+    }
+    
+    const patientId = parseInt(value);
+    if (isNaN(patientId)) {
+      console.log("Invalid patient ID:", value);
+      return;
+    }
+    
+    const patient = patients.find(p => p.id === patientId);
+    console.log("Found patient:", patient);
+    setSelectedPatient(patient || null);
+  };
 
   const handleTranscriptionReady = async (newTranscription: string) => {
     setTranscription(newTranscription);
-    
-    // Automatically generate medical note after transcription
-    if (createdVisitId && selectedTemplate && newTranscription.trim()) {
-      setIsGeneratingNote(true);
-      try {
-        await generateNoteMutation.mutateAsync({
-          transcription: newTranscription,
-          visitId: createdVisitId,
-          templateId: selectedTemplate.id,
-        });
-      } catch (error) {
-        console.error("Failed to generate note:", error);
-      } finally {
-        setIsGeneratingNote(false);
-      }
-    }
   };
 
   const handleCompleteAndNavigate = () => {
@@ -183,6 +186,64 @@ export default function NewVisit() {
         return type;
     }
   };
+
+  // Loading state
+  if (isLoadingPatients || isLoadingTemplates) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-gray-50">
+        <Sidebar />
+        <main className="flex-1 flex items-center justify-center">
+          <Card className="max-w-md">
+            <CardContent className="p-8 text-center space-y-4">
+              <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
+              <h3 className="text-lg font-medium text-gray-900">Yükleniyor...</h3>
+              <p className="text-gray-600">
+                {isLoadingPatients ? "Hasta verileri" : "Şablon verileri"} yükleniyor...
+              </p>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
+  // Error state
+  if (patientsError || templatesError) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-gray-50">
+        <Sidebar />
+        <main className="flex-1 flex items-center justify-center">
+          <Card className="max-w-md">
+            <CardContent className="p-6 text-center space-y-4">
+              <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
+              <h3 className="text-lg font-medium text-gray-900">Database Bağlantı Hatası</h3>
+              <p className="text-gray-600">
+                {patientsError ? "Hasta verileri yüklenemedi." : "Şablon verileri yüklenemedi."}
+              </p>
+              <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
+                <p>Hata: {(patientsError || templatesError)?.message}</p>
+              </div>
+              <div className="flex space-x-2 justify-center">
+                <Button 
+                  onClick={() => {
+                    refetchPatients();
+                    refetchTemplates();
+                  }} 
+                  variant="outline"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Tekrar Dene
+                </Button>
+                <Button onClick={() => setLocation("/")} variant="outline">
+                  Ana Sayfa
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -208,6 +269,9 @@ export default function NewVisit() {
                 </p>
               </div>
             </div>
+            <div className="text-sm text-gray-500">
+              Database: {patients.length} hasta, {templates.length} şablon
+            </div>
           </div>
         </header>
 
@@ -227,8 +291,32 @@ export default function NewVisit() {
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="patient-select">Hasta</Label>
-                      {selectedPatient ? (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      
+                      {/* Hasta yoksa uyarı göster */}
+                      {patients.length === 0 ? (
+                        <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                          <UserPlus className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            Henüz hasta kaydı bulunmuyor
+                          </h3>
+                          <p className="text-gray-600 mb-6 max-w-sm mx-auto">
+                            Muayene başlatmak için önce en az bir hasta eklemeniz gerekiyor.
+                            Database'e gerçek hasta verisi eklenecek.
+                          </p>
+                          <div className="space-y-3">
+                            <Link href="/patients/add">
+                              <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3">
+                                <UserPlus className="mr-2 h-5 w-5" />
+                                İlk Hastayı Ekle
+                              </Button>
+                            </Link>
+                            <p className="text-xs text-gray-500">
+                              PostgreSQL database'e kalıcı olarak kaydedilecek
+                            </p>
+                          </div>
+                        </div>
+                      ) : selectedPatient ? (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="font-medium text-blue-900">
@@ -237,6 +325,16 @@ export default function NewVisit() {
                               {selectedPatient.tcKimlik && (
                                 <p className="text-sm text-blue-700 font-mono">
                                   TC: {selectedPatient.tcKimlik}
+                                </p>
+                              )}
+                              {selectedPatient.phone && (
+                                <p className="text-sm text-blue-700">
+                                  Tel: {selectedPatient.phone}
+                                </p>
+                              )}
+                              {selectedPatient.gender && (
+                                <p className="text-sm text-blue-600">
+                                  Cinsiyet: {selectedPatient.gender}
                                 </p>
                               )}
                             </div>
@@ -251,22 +349,59 @@ export default function NewVisit() {
                           </div>
                         </div>
                       ) : (
-                        <Select onValueChange={(value) => {
-                          const patient = patients.find(p => p.id === parseInt(value));
-                          setSelectedPatient(patient || null);
-                        }}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Hasta seçin..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {patients.map((patient) => (
-                              <SelectItem key={patient.id} value={patient.id.toString()}>
-                                {patient.name} {patient.surname}
-                                {patient.tcKimlik && ` - TC: ${patient.tcKimlik}`}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="space-y-3">
+                          <Select 
+                            value={selectedPatient?.id?.toString() || ""} 
+                            onValueChange={handlePatientSelect}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Hasta seçin..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {patients
+                                .filter(patient => 
+                                  patient.id && 
+                                  patient.name && 
+                                  patient.surname &&
+                                  patient.name.trim() !== "" &&
+                                  patient.surname.trim() !== ""
+                                )
+                                .map((patient) => (
+                                  <SelectItem 
+                                    key={`patient-${patient.id}`} 
+                                    value={patient.id.toString()}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span>{patient.name} {patient.surname}</span>
+                                      <div className="flex space-x-4 text-xs text-gray-500">
+                                        {patient.tcKimlik && (
+                                          <span>TC: {patient.tcKimlik}</span>
+                                        )}
+                                        {patient.phone && (
+                                          <span>Tel: {patient.phone}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                ))
+                              }
+                            </SelectContent>
+                          </Select>
+                          
+                          <div className="flex justify-between items-center text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                            <span>📊 Database'de {patients.length} hasta kayıtlı</span>
+                            <Link href="/patients/add">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-0 text-green-600 hover:text-green-800 font-medium"
+                              >
+                                <UserPlus className="mr-1 h-3 w-3" />
+                                Yeni Hasta Ekle
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
                       )}
                     </div>
 
@@ -321,7 +456,7 @@ export default function NewVisit() {
                         className="w-full h-20 border-dashed"
                       >
                         <Stethoscope className="mr-2 h-5 w-5" />
-                        Şablon Seç
+                        Şablon Seç ({templates.length} şablon mevcut)
                       </Button>
                     )}
                   </div>
@@ -332,12 +467,26 @@ export default function NewVisit() {
               <div className="flex justify-center">
                 <Button
                   onClick={handleStartVisit}
-                  disabled={!selectedPatient || !selectedTemplate || createVisitMutation.isPending}
+                  disabled={
+                    !selectedPatient || 
+                    !selectedTemplate || 
+                    createVisitMutation.isPending || 
+                    patients.length === 0
+                  }
                   size="lg"
                   className="w-full max-w-md medical-gradient text-white"
                 >
                   <Clock className="mr-2 h-5 w-5" />
-                  {createVisitMutation.isPending ? "Oluşturuluyor..." : "Muayeneyi Başlat"}
+                  {createVisitMutation.isPending 
+                    ? "Muayene Oluşturuluyor..." 
+                    : !selectedPatient && patients.length > 0
+                    ? "Önce Hasta Seçin"
+                    : !selectedTemplate
+                    ? "Önce Şablon Seçin"
+                    : patients.length === 0
+                    ? "Önce Hasta Ekleyin"
+                    : "Muayeneyi Başlat"
+                  }
                 </Button>
               </div>
             </div>
@@ -347,7 +496,7 @@ export default function NewVisit() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-center text-green-600">
-                    ✓ Muayene Kaydı Oluşturuldu
+                    ✅ Muayene Kaydı Oluşturuldu
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -358,6 +507,9 @@ export default function NewVisit() {
                       </h3>
                       <p className="text-sm text-gray-600">
                         {getVisitTypeText(visitType)} - {selectedTemplate?.name}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Visit ID: {createdVisitId} | Database'e kaydedildi
                       </p>
                     </div>
                     <p className="text-gray-700">
@@ -373,241 +525,6 @@ export default function NewVisit() {
                 visitId={createdVisitId ?? undefined}
                 templateId={selectedTemplate?.id}
               />
-
-              {/* Transcription Preview */}
-              {transcription && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Kayıt Önizlemesi</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-gray-700 whitespace-pre-wrap">{transcription}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Note Generation Status */}
-              {(isGeneratingNote || generateNoteMutation.isPending) && (
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-4">
-                      <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">Tıbbi Not Oluşturuluyor</h3>
-                        <p className="text-sm text-gray-600">AI transkripsiyon metnini analiz ediyor ve yapılandırılmış not hazırlıyor...</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Generated Medical Note */}
-              {showMedicalNote && generatedNote && (
-                <div className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-center text-green-600">
-                        ✓ Tıbbi Not Başarıyla Oluşturuldu
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-center space-y-2">
-                        <h3 className="font-bold text-lg">
-                          {selectedPatient?.name} {selectedPatient?.surname}
-                        </h3>
-                        <p className="text-gray-600">
-                          {getVisitTypeText(visitType)} - {selectedTemplate?.specialty}
-                        </p>
-                        {selectedPatient?.tcKimlik && (
-                          <p className="text-sm text-gray-500">TC: {selectedPatient.tcKimlik}</p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Visit Summary */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-blue-600">Muayene Özeti</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-700 leading-relaxed">
-                        {generatedNote.visitSummary}
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Subjective */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-purple-600">Subjektif</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Ana Şikayet</h4>
-                        <p className="text-gray-700">{generatedNote.subjective?.complaint}</p>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Mevcut Şikayetler</h4>
-                        <p className="text-gray-700 whitespace-pre-wrap">{generatedNote.subjective?.currentComplaints}</p>
-                      </div>
-                      
-                      {generatedNote.subjective?.medicalHistory && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Tıbbi Geçmiş</h4>
-                          <ul className="list-disc list-inside text-gray-700 space-y-1">
-                            {Array.isArray(generatedNote.subjective.medicalHistory) 
-                              ? generatedNote.subjective.medicalHistory.map((item: string, index: number) => (
-                                  <li key={index}>{item}</li>
-                                ))
-                              : <li>{generatedNote.subjective.medicalHistory}</li>
-                            }
-                          </ul>
-                        </div>
-                      )}
-                      
-                      {generatedNote.subjective?.medications && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">İlaçlar</h4>
-                          <ul className="list-disc list-inside text-gray-700 space-y-1">
-                            {Array.isArray(generatedNote.subjective.medications) 
-                              ? generatedNote.subjective.medications.map((item: string, index: number) => (
-                                  <li key={index}>{item}</li>
-                                ))
-                              : <li>{generatedNote.subjective.medications}</li>
-                            }
-                          </ul>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Objective */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-orange-600">Objektif</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {generatedNote.objective?.vitalSigns && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Vital Bulgular</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                            {Object.entries(generatedNote.objective.vitalSigns).map(([key, value]) => (
-                              <div key={key} className="bg-gray-50 p-2 rounded">
-                                <span className="text-sm font-medium">{key}:</span> {value}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {generatedNote.objective?.physicalExam && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Fizik Muayene</h4>
-                          <p className="text-gray-700">{generatedNote.objective.physicalExam}</p>
-                        </div>
-                      )}
-                      
-                      {generatedNote.objective?.diagnosticResults && generatedNote.objective.diagnosticResults.length > 0 && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Tetkik Sonuçları</h4>
-                          {generatedNote.objective.diagnosticResults.map((result: any, index: number) => (
-                            <div key={index} className="mb-3">
-                              <h5 className="font-medium text-gray-800">{result.test}</h5>
-                              <ul className="list-disc list-inside text-gray-700 ml-4">
-                                {result.results.map((item: string, idx: number) => (
-                                  <li key={idx}>{item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Assessment & Plan */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-red-600">Değerlendirme ve Plan</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Genel Değerlendirme</h4>
-                        <p className="text-gray-700">{generatedNote.assessment?.general}</p>
-                      </div>
-                      
-                      {generatedNote.assessment?.diagnoses && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Tanılar</h4>
-                          {generatedNote.assessment.diagnoses.map((diagnosis: any, index: number) => (
-                            <div key={index} className="bg-red-50 p-3 rounded-lg">
-                              <p className="font-medium">{diagnosis.diagnosis}</p>
-                              {diagnosis.icd10Code && (
-                                <p className="text-sm text-gray-600">ICD-10: {diagnosis.icd10Code}</p>
-                              )}
-                              <span className={`inline-block px-2 py-1 text-xs rounded ${
-                                diagnosis.type === 'ana' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {diagnosis.type === 'ana' ? 'Ana Tanı' : diagnosis.type}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {generatedNote.plan?.treatment && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Tedavi Planı</h4>
-                          <ul className="list-disc list-inside text-gray-700 space-y-1">
-                            {generatedNote.plan.treatment.map((item: string, index: number) => (
-                              <li key={index}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      
-                      {generatedNote.plan?.medications && generatedNote.plan.medications.length > 0 && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">İlaç Tedavisi</h4>
-                          <div className="space-y-2">
-                            {generatedNote.plan.medications.map((med: any, index: number) => (
-                              <div key={index} className="bg-blue-50 p-3 rounded-lg">
-                                <p className="font-medium">{med.name}</p>
-                                <p className="text-sm text-gray-600">
-                                  {med.dosage} - {med.frequency}
-                                  {med.duration && ` - ${med.duration}`}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {generatedNote.plan?.followUp && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Takip</h4>
-                          <p className="text-gray-700">{generatedNote.plan.followUp}</p>
-                        </div>
-                      )}
-                      
-                      {generatedNote.plan?.lifestyle && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Yaşam Tarzı Önerileri</h4>
-                          <ul className="list-disc list-inside text-gray-700 space-y-1">
-                            {generatedNote.plan.lifestyle.map((item: string, index: number) => (
-                              <li key={index}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
 
               <Separator />
 

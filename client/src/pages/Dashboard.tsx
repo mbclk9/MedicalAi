@@ -16,13 +16,21 @@ import {
 import { Sidebar } from "@/components/Sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Visit } from "@/types/medical";
+import type { Visit, Patient } from "@/types";
+
+interface VisitWithPatient extends Visit {
+  patient: Patient;
+}
 
 export default function Dashboard() {
   const { toast } = useToast();
 
-  const { data: recentVisits = [], isLoading } = useQuery<Visit[]>({
+  const { data: recentVisits = [], isLoading } = useQuery<VisitWithPatient[]>({
     queryKey: ["/api/visits/recent"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/visits/recent");
+      return response.json();
+    },
   });
 
   const deleteVisitMutation = useMutation({

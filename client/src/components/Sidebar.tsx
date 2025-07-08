@@ -11,20 +11,50 @@ import {
   FileText, 
   Settings,
   FilePlus2,
-  Users
+  Users,
+  UserPlus,
+  Activity
 } from "lucide-react";
-import type { Doctor, Visit } from "@/types/medical";
+import type { Doctor, Visit, Patient } from "@/types";
+import { apiRequest } from "@/lib/queryClient";
+
+interface VisitWithPatient extends Visit {
+  patient: Patient;
+}
 
 export function Sidebar() {
   const [location] = useLocation();
   
   const { data: doctor } = useQuery<Doctor>({
     queryKey: ["/api/doctor"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/doctor");
+      return response.json();
+    },
   });
 
-  const { data: recentVisits = [] } = useQuery<Visit[]>({
+  const { data: recentVisits = [] } = useQuery<VisitWithPatient[]>({
     queryKey: ["/api/visits/recent"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/visits/recent");
+      return response.json();
+    },
   });
+
+  // Son muayeneleri hasta bazında grupla ve her hastadan sadece en son olanı al
+  const uniqueRecentVisits = recentVisits.reduce((acc, current) => {
+    // Eğer bu hastanın daha yeni tarihli bir ziyareti zaten varsa, es geç
+    const existingVisit = acc.find(item => item.patient.id === current.patient.id);
+    if (existingVisit) {
+      // Mevcut ziyaretin tarihi daha eskiyse, yenisiyle değiştir
+      if (new Date(current.visitDate!) > new Date(existingVisit.visitDate!)) {
+        return acc.map(item => item.patient.id === current.patient.id ? current : item);
+      }
+      return acc;
+    }
+    // Bu hasta ilk defa ekleniyorsa, listeye ekle
+    return [...acc, current];
+  }, [] as VisitWithPatient[]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -50,12 +80,6 @@ export function Sidebar() {
       default:
         return status;
     }
-  };
-
-  const specialtyStats = {
-    "Kardiyoloji": recentVisits.filter(v => v.patient?.name.includes("Mesut") || v.patient?.name.includes("Ahmed")).length,
-    "İç Hastalıkları": recentVisits.filter(v => v.patient?.name.includes("Ayşe")).length,
-    "Pediatri": recentVisits.filter(v => v.visitType === "ilk").length,
   };
 
   return (
@@ -96,22 +120,17 @@ export function Sidebar() {
 
       {/* Hasta Section */}
       <div className="p-6 border-b border-gray-200">
-        <div className="text-sm font-medium text-gray-900 mb-3">Hasta</div>
+        <div className="text-sm font-medium text-gray-900 mb-3">Hasta Yönetimi</div>
         <div className="space-y-2">
+          {/* Hasta Ekle Button - Prominent */}
           <Link href="/patients/add">
-            <Button variant="outline" className="w-full py-2 px-4 font-medium">
-              <FilePlus2 className="mr-2 h-4 w-4" />
-              Hasta Ekle
+            <Button className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 font-medium transition-colors">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Yeni Hasta Ekle
             </Button>
           </Link>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input 
-              type="text" 
-              placeholder="Hasta ara..." 
-              className="pl-10"
-            />
-          </div>
+          
+          {/* Hasta Listesi */}
           <Link href="/patients" className={`flex items-center space-x-3 px-3 py-2 rounded-lg ${
             location === "/patients" 
               ? "bg-blue-50 text-primary" 
@@ -120,6 +139,16 @@ export function Sidebar() {
             <Users className="h-4 w-4" />
             <span>Hasta Listesi</span>
           </Link>
+          
+          {/* Hasta Arama */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input 
+              type="text" 
+              placeholder="Hasta ara..." 
+              className="pl-10"
+            />
+          </div>
         </div>
       </div>
 
@@ -139,8 +168,47 @@ export function Sidebar() {
           </Badge>
         </Link>
 
+        {/* Recent Visits Preview */}
+        {uniqueRecentVisits.length > 0 && (
+          <div className="pt-4 border-t border-gray-200 mt-4">
+            <div className="text-sm font-medium text-gray-900 mb-3">Son Muayeneler</div>
+            <div className="space-y-2">
+              {uniqueRecentVisits.slice(0, 5).map((visit) => (
+                <Link 
+                  key={visit.id} 
+                  href={`/visit/${visit.id}`}
+                  className="block p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {visit.patient?.name} {visit.patient?.surname}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {visit.visitType === 'ilk' ? 'İlk' : visit.visitType === 'kontrol' ? 'Kontrol' : 'Konsültasyon'}
+                      </p>
+                    </div>
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${getStatusColor(visit.status || 'in_progress')}`}
+                    >
+                      {(visit.status || 'in_progress') === 'in_progress' ? 'Devam' : 'Tamam'}
+                    </Badge>
+                  </div>
+                </Link>
+              ))}
+              
+              {uniqueRecentVisits.length > 5 && (
+                <Link href="/" className="block text-xs text-primary hover:underline text-center pt-2">
+                  Tümünü görüntüle ({uniqueRecentVisits.length - 5} daha)
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="pt-6 border-t border-gray-200 mt-6">
-          <div className="text-sm font-medium text-gray-900 mb-4">Şablon Kütüphanesi</div>
+          <div className="text-sm font-medium text-gray-900 mb-4">Ayarlar</div>
           
           <Link href="/templates" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
             <Settings className="h-4 w-4" />

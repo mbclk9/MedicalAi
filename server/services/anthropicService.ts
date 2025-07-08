@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
-import { intelligentMedicalService } from './intelligentMedicalService';
+import { intelligentMedicalService } from './intelligentMedicalService.js';
 
 /*
 <important_code_snippet_instructions>

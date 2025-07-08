@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, User } from "lucide-react";
 import { Link } from "wouter";
-import type { Visit, Patient, MedicalNote, Recording, MedicalTemplate } from "@/types/medical";
+import type { Visit, Patient, MedicalNote, Recording, MedicalTemplate } from "@/types";
 
 interface VisitDetails {
   visit: Visit;
@@ -27,6 +27,13 @@ export default function PatientNote() {
 
   const { data: visitDetails, isLoading, error } = useQuery<VisitDetails>({
     queryKey: [`/api/visits/${visitId}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/visits/${visitId}`);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.json();
+    },
     enabled: !!visitId,
   });
 

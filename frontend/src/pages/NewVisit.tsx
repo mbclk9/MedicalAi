@@ -1,19 +1,20 @@
+import React from "react";
 import { useState, useEffect } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Label } from "../components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Separator } from "../components/ui/separator";
 import { ArrowLeft, User, Stethoscope, Clock } from "lucide-react";
 import { Link } from "wouter";
-import { Sidebar } from "@/components/Sidebar";
-import { TemplateModal } from "@/components/TemplateModal";
-import { RecordingControls } from "@/components/RecordingControls";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import type { Patient, MedicalTemplate } from "@/types/medical";
+import { Sidebar } from "../components/Sidebar";
+import { TemplateModal } from "../components/TemplateModal";
+import { RecordingControls } from "../components/RecordingControls";
+import { apiRequest } from "../lib/queryClient";
+import { useToast } from "../hooks/use-toast";
+import type { Patient, MedicalTemplate } from "../types/medical";
 
 export default function NewVisit() {
   const [, setLocation] = useLocation();
@@ -497,7 +498,10 @@ export default function NewVisit() {
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                             {Object.entries(generatedNote.objective.vitalSigns).map(([key, value]) => (
                               <div key={key} className="bg-gray-50 p-2 rounded">
-                                <span className="text-sm font-medium">{key}:</span> {value}
+                                <span className="text-sm font-medium">{key}:</span>{" "}
+                                {typeof value === "string" || typeof value === "number"
+                                  ? value
+                                  : JSON.stringify(value)}
                               </div>
                             ))}
                           </div>

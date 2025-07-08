@@ -1,15 +1,16 @@
+import React from "react";
 import { useState, useEffect } from "react";
 import { useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Sidebar } from "@/components/Sidebar";
-import { RecordingControls } from "@/components/RecordingControls";
-import { MedicalNoteEditor } from "@/components/MedicalNoteEditor";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Sidebar } from "../components/Sidebar";
+import { RecordingControls } from "../components/RecordingControls";
+import { MedicalNoteEditor } from "../components/MedicalNoteEditor";
+import { Card, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
 import { ArrowLeft, User } from "lucide-react";
 import { Link } from "wouter";
-import type { Visit, Patient, MedicalNote, Recording, MedicalTemplate } from "@/types/medical";
+import type { Visit, Patient, MedicalNote, Recording, MedicalTemplate } from "../types/medical";
 
 interface VisitDetails {
   visit: Visit;

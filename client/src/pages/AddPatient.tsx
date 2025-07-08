@@ -1,200 +1,350 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, User, Save } from "lucide-react";
-import { Link } from "wouter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import type { Patient } from "@/types/medical";
+import { apiRequest } from "@/lib/queryClient";
+import { ArrowLeft, UserPlus, Save, X } from "lucide-react";
+import { Link } from "wouter";
+
+interface PatientFormData {
+  name: string;
+  surname: string;
+  tcKimlik: string;
+  phone: string;
+  sgkNumber: string;
+  birthDate: string;
+  gender: string;
+  email: string;
+  address: string;
+}
 
 export default function AddPatient() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PatientFormData>({
     name: "",
     surname: "",
     tcKimlik: "",
-    birthDate: "",
-    sgkNumber: "",
     phone: "",
+    sgkNumber: "",
+    birthDate: "",
+    gender: "",
+    email: "",
+    address: "",
   });
 
-  const addPatientMutation = useMutation({
-    mutationFn: async (patientData: typeof formData): Promise<Patient> => {
-      const requestData = {
-        ...patientData,
-        birthDate: patientData.birthDate ? patientData.birthDate : undefined,
-        // Boş alanları temizle
-        tcKimlik: patientData.tcKimlik || undefined,
-        sgkNumber: patientData.sgkNumber || undefined,
-        phone: patientData.phone || undefined,
+  const [errors, setErrors] = useState<Partial<PatientFormData>>({});
+
+  const createPatientMutation = useMutation({
+    mutationFn: async (data: PatientFormData) => {
+      // Prepare data for API
+      const patientData = {
+        name: data.name.trim(),
+        surname: data.surname.trim(),
+        tcKimlik: data.tcKimlik.trim() || undefined,
+        phone: data.phone.trim() || undefined,
+        sgkNumber: data.sgkNumber.trim() || undefined,
+        birthDate: data.birthDate ? new Date(data.birthDate) : undefined,
+        gender: data.gender || undefined,
+        email: data.email.trim() || undefined,
+        address: data.address.trim() || undefined,
       };
+
+      console.log("Sending patient data:", patientData);
       
-      console.log("Sending patient data:", requestData);
-      
-      const response = await apiRequest("POST", "/api/patients", requestData);
-      const result = await response.json();
-      
-      console.log("Patient creation response:", result);
-      
-      return result;
+      const response = await apiRequest("POST", "/api/patients", patientData);
+      return response.json();
     },
-    onSuccess: (newPatient: Patient) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/patients"] });
+    onSuccess: (newPatient) => {
       toast({
-        title: "Başarılı",
+        title: "✅ Başarılı",
         description: `${newPatient.name} ${newPatient.surname} başarıyla eklendi.`,
       });
-      setLocation("/");
+      
+      console.log("Patient created successfully:", newPatient);
+      
+      // Invalidate patient list to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/patients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/visits/recent"] });
+      
+      // Navigate back to patients list
+      setLocation("/patients");
     },
-    onError: (error: any) => {
-      console.error("Patient creation error:", error);
-      
-      let errorMessage = "Hasta eklenirken bir hata oluştu.";
-      
-      if (error.message) {
-        try {
-          // API'den gelen error mesajını parse et
-          const errorData = JSON.parse(error.message.split(': ')[1] || '{}');
-          if (errorData.message) {
-            errorMessage = errorData.message;
-          }
-          if (errorData.errors && Array.isArray(errorData.errors)) {
-            errorMessage = errorData.errors.map((e: any) => e.message).join(', ');
-          }
-        } catch {
-          if (error.message.includes(':')) {
-            errorMessage = error.message.split(': ')[1] || errorMessage;
-          }
-        }
-      }
-      
+    onError: (error) => {
+      console.error("Patient creation failed:", error);
       toast({
-        title: "Hata",
-        description: errorMessage,
+        title: "❌ Hata",
+        description: "Hasta eklenirken hata oluştu: " + error.message,
         variant: "destructive",
       });
     },
   });
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<PatientFormData> = {};
+
+    // Required fields
+    if (!formData.name.trim()) {
+      newErrors.name = "Ad gereklidir";
+    }
+    if (!formData.surname.trim()) {
+      newErrors.surname = "Soyad gereklidir";
+    }
+
+    // TC Kimlik validation (optional but if provided should be valid)
+    if (formData.tcKimlik.trim()) {
+      const tcRegex = /^[1-9][0-9]{10}$/;
+      if (!tcRegex.test(formData.tcKimlik.trim())) {
+        newErrors.tcKimlik = "TC Kimlik numarası 11 haneli olmalı ve 0 ile başlamamalı";
+      }
+    }
+
+    // Phone validation (optional but if provided should be valid)
+    if (formData.phone.trim()) {
+      const phoneRegex = /^[0-9]{10,11}$/;
+      if (!phoneRegex.test(formData.phone.replace(/[^0-9]/g, ''))) {
+        newErrors.phone = "Geçerli bir telefon numarası girin (10-11 rakam)";
+      }
+    }
+
+    // Email validation (optional but if provided should be valid)
+    if (formData.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        newErrors.email = "Geçerli bir email adresi girin";
+      }
+    }
+
+    // Birth date validation (should not be in future)
+    if (formData.birthDate) {
+      const birthDate = new Date(formData.birthDate);
+      const today = new Date();
+      if (birthDate > today) {
+        newErrors.birthDate = "Doğum tarihi gelecekte olamaz";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.surname.trim()) {
+    if (!validateForm()) {
       toast({
-        title: "Eksik Bilgi",
-        description: "Ad ve soyad alanları zorunludur.",
+        title: "⚠️ Form Hatası",
+        description: "Lütfen formdaki hataları düzeltin.",
         variant: "destructive",
       });
       return;
     }
 
-    if (formData.tcKimlik && formData.tcKimlik.length !== 11) {
-      toast({
-        title: "Geçersiz TC Kimlik",
-        description: "TC Kimlik numarası 11 haneli olmalıdır.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    addPatientMutation.mutate(formData);
+    createPatientMutation.mutate(formData);
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof PatientFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleReset = () => {
+    setFormData({
+      name: "",
+      surname: "",
+      tcKimlik: "",
+      phone: "",
+      sgkNumber: "",
+      birthDate: "",
+      gender: "",
+      email: "",
+      address: "",
+    });
+    setErrors({});
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-gray-50">
       <Sidebar />
       
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-white dark:bg-gray-800 shadow-sm border-b px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Ana Sayfa
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                Yeni Hasta Ekle
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Hasta bilgilerini girin
-              </p>
+      <main className="flex-1 overflow-y-auto">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link href="/patients">
+                <Button variant="ghost" size="sm">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Hasta Listesi
+                </Button>
+              </Link>
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-900 flex items-center">
+                  <UserPlus className="mr-3 h-6 w-6" />
+                  Yeni Hasta Ekle
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Yeni hasta kaydı oluşturun
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        <div className="flex-1 overflow-auto p-6">
-          <div className="max-w-2xl mx-auto">
+        {/* Content */}
+        <div className="p-8">
+          <div className="max-w-4xl mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Hasta Bilgileri
-                </CardTitle>
+                <CardTitle>Hasta Bilgileri</CardTitle>
+                <p className="text-sm text-gray-600">
+                  * ile işaretlenen alanlar zorunludur
+                </p>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Temel Bilgiler */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Ad *</Label>
+                      <Label htmlFor="name" className="text-sm font-medium">
+                        Ad *
+                      </Label>
                       <Input
                         id="name"
                         value={formData.name}
                         onChange={(e) => handleInputChange("name", e.target.value)}
-                        placeholder="Hastanın adı"
+                        placeholder="Hasta adı"
+                        className={errors.name ? "border-red-500" : ""}
                         required
                       />
+                      {errors.name && (
+                        <p className="text-sm text-red-600">{errors.name}</p>
+                      )}
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="surname">Soyad *</Label>
+                      <Label htmlFor="surname" className="text-sm font-medium">
+                        Soyad *
+                      </Label>
                       <Input
                         id="surname"
                         value={formData.surname}
                         onChange={(e) => handleInputChange("surname", e.target.value)}
-                        placeholder="Hastanın soyadı"
+                        placeholder="Hasta soyadı"
+                        className={errors.surname ? "border-red-500" : ""}
                         required
                       />
+                      {errors.surname && (
+                        <p className="text-sm text-red-600">{errors.surname}</p>
+                      )}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Kimlik Bilgileri */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="tcKimlik">TC Kimlik No</Label>
+                      <Label htmlFor="tcKimlik" className="text-sm font-medium">
+                        TC Kimlik No
+                      </Label>
                       <Input
                         id="tcKimlik"
                         value={formData.tcKimlik}
-                        onChange={(e) => handleInputChange("tcKimlik", e.target.value.replace(/\D/g, "").slice(0, 11))}
+                        onChange={(e) => {
+                          // Sadece rakam girişine izin ver
+                          const value = e.target.value.replace(/\D/g, '');
+                          if (value.length <= 11) {
+                            handleInputChange("tcKimlik", value);
+                          }
+                        }}
                         placeholder="12345678901"
                         maxLength={11}
+                        className={errors.tcKimlik ? "border-red-500" : ""}
                       />
+                      {errors.tcKimlik && (
+                        <p className="text-sm text-red-600">{errors.tcKimlik}</p>
+                      )}
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="birthDate">Doğum Tarihi</Label>
-                      <Input
-                        id="birthDate"
-                        type="date"
-                        value={formData.birthDate}
-                        onChange={(e) => handleInputChange("birthDate", e.target.value)}
-                      />
+                      <Label htmlFor="gender" className="text-sm font-medium">
+                        Cinsiyet
+                      </Label>
+                      <Select 
+                        value={formData.gender} 
+                        onValueChange={(value) => handleInputChange("gender", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Cinsiyet seçin..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="erkek">Erkek</SelectItem>
+                          <SelectItem value="kadın">Kadın</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* İletişim Bilgileri */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="sgkNumber">SGK No</Label>
+                      <Label htmlFor="phone" className="text-sm font-medium">
+                        Telefon
+                      </Label>
+                      <Input
+                        id="phone"
+                        value={formData.phone}
+                        onChange={(e) => {
+                          // Telefon numarası formatlaması
+                          let value = e.target.value.replace(/\D/g, '');
+                          if (value.length <= 11) {
+                            handleInputChange("phone", value);
+                          }
+                        }}
+                        placeholder="05551234567"
+                        maxLength={11}
+                        className={errors.phone ? "border-red-500" : ""}
+                      />
+                      {errors.phone && (
+                        <p className="text-sm text-red-600">{errors.phone}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-sm font-medium">
+                        Email
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange("email", e.target.value)}
+                        placeholder="hasta@email.com"
+                        className={errors.email ? "border-red-500" : ""}
+                      />
+                      {errors.email && (
+                        <p className="text-sm text-red-600">{errors.email}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Sağlık Bilgileri */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="sgkNumber" className="text-sm font-medium">
+                        SGK Numarası
+                      </Label>
                       <Input
                         id="sgkNumber"
                         value={formData.sgkNumber}
@@ -202,38 +352,86 @@ export default function AddPatient() {
                         placeholder="SGK numarası"
                       />
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Telefon</Label>
+                      <Label htmlFor="birthDate" className="text-sm font-medium">
+                        Doğum Tarihi
+                      </Label>
                       <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange("phone", e.target.value)}
-                        placeholder="05XX XXX XX XX"
+                        id="birthDate"
+                        type="date"
+                        value={formData.birthDate}
+                        onChange={(e) => handleInputChange("birthDate", e.target.value)}
+                        max={new Date().toISOString().split('T')[0]} // Gelecek tarih seçimini engelle
+                        className={errors.birthDate ? "border-red-500" : ""}
                       />
+                      {errors.birthDate && (
+                        <p className="text-sm text-red-600">{errors.birthDate}</p>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex gap-3 pt-6">
-                    <Button 
-                      type="submit" 
-                      disabled={addPatientMutation.isPending}
-                      className="flex-1"
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      {addPatientMutation.isPending ? "Kaydediliyor..." : "Hasta Ekle"}
-                    </Button>
-                    <Link to="/">
-                      <Button variant="outline" type="button">
+                  {/* Adres */}
+                  <div className="space-y-2">
+                    <Label htmlFor="address" className="text-sm font-medium">
+                      Adres
+                    </Label>
+                    <Input
+                      id="address"
+                      value={formData.address}
+                      onChange={(e) => handleInputChange("address", e.target.value)}
+                      placeholder="Ev/iş adresi (opsiyonel)"
+                    />
+                  </div>
+
+                  {/* Form Actions */}
+                  <div className="flex items-center justify-between pt-6 border-t">
+                    <div className="flex space-x-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleReset}
+                        disabled={createPatientMutation.isPending}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Temizle
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setLocation("/patients")}
+                      >
                         İptal
                       </Button>
-                    </Link>
+                    </div>
+                    
+                    <Button
+                      type="submit"
+                      disabled={createPatientMutation.isPending}
+                      className="medical-gradient text-white"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      {createPatientMutation.isPending ? "Kaydediliyor..." : "Hasta Ekle"}
+                    </Button>
                   </div>
                 </form>
               </CardContent>
             </Card>
+
+            {/* Development Info */}
+            {process.env.NODE_ENV === 'development' && (
+              <Card className="mt-6 bg-blue-50 border-blue-200">
+                <CardContent className="p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">🔧 Geliştirici Bilgisi</h4>
+                  <p className="text-sm text-blue-800">
+                    Hasta database'e kaydedilecek. PostgreSQL bağlantınızın aktif olduğundan emin olun.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

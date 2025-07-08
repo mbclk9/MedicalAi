@@ -2,7 +2,7 @@ import {
   doctors, patients, visits, medicalNotes, recordings, medicalTemplates,
   type Doctor, type Patient, type Visit, type MedicalNote, type Recording, type MedicalTemplate,
   type InsertDoctor, type InsertPatient, type InsertVisit, type InsertMedicalNote, type InsertRecording, type InsertTemplate
-} from "@shared/schema";
+} from "../schemas/shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 import type { IStorage } from "./storage";

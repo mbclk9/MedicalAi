@@ -1,7 +1,15 @@
 import { useState, useRef, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import type { TranscriptionResult, RecordingState } from "@/types/medical";
+import type { TranscriptionResult } from "@/types";
+
+interface RecordingState {
+  isRecording: boolean;
+  isPaused: boolean;
+  duration: number;
+  transcription: string;
+  confidence: number;
+}
 
 export function useAudioRecording(
   onTranscriptionReady?: (transcription: string) => void,
@@ -33,7 +41,7 @@ export function useAudioRecording(
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.webm");
       
-      console.log("Sending transcription request...");
+      console.log("Sending transcription request via apiRequest...");
       const response = await apiRequest("POST", "/api/transcribe", formData);
       const result = await response.json();
       console.log("Transcription response:", result);

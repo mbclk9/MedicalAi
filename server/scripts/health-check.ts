@@ -5,7 +5,7 @@
  * Sistem durumunu kontrol eder
  */
 
-import { db } from '../db.js';
+import { db } from '../database/db.js';
 import { doctors } from '../../shared/schema.js';
 
 async function healthCheck() {

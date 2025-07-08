@@ -1,7 +1,7 @@
 import { 
   type Doctor, type Patient, type Visit, type MedicalNote, type Recording, type MedicalTemplate,
   type InsertDoctor, type InsertPatient, type InsertVisit, type InsertMedicalNote, type InsertRecording, type InsertTemplate
-} from "@shared/schema";
+} from "../schemas/shared/schema";
 
 export interface IStorage {
   // Doctor management

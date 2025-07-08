@@ -17,7 +17,8 @@ import {
   RotateCcw, 
   Stethoscope 
 } from "lucide-react";
-import type { MedicalTemplate } from "@/types/medical";
+import type { MedicalTemplate } from "@/types";
+import { apiRequest } from "@/lib/queryClient";
 
 interface TemplateModalProps {
   open: boolean;
@@ -48,6 +49,10 @@ export function TemplateModal({ open, onOpenChange, onTemplateSelect }: Template
 
   const { data: templates = [], isLoading } = useQuery<MedicalTemplate[]>({
     queryKey: ["/api/templates"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/templates");
+      return response.json();
+    },
     enabled: open,
   });
 

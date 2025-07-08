@@ -1,9 +1,10 @@
+import React from "react";
 import { Link } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { useQuery, useMutation ,useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Separator } from "../components/ui/separator";
 import { 
   Download, 
   Mic, 
@@ -13,10 +14,10 @@ import {
   User,
   Trash2
 } from "lucide-react";
-import { Sidebar } from "@/components/Sidebar";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Visit } from "@/types/medical";
+import { Sidebar } from "../components/Sidebar";
+import { useToast } from "../hooks/use-toast";
+import { apiRequest, queryClient } from "../lib/queryClient";
+import type { Visit } from "../types/medical";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -86,6 +87,7 @@ export default function Dashboard() {
         return status;
     }
   };
+  const queryClient = useQueryClient();
 
   const getStatusIcon = (status: string) => {
     switch (status) {

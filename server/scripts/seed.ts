@@ -5,7 +5,7 @@
  * Test verilerini veritabanına yükler
  */
 
-import { db } from '../db.js';
+import { db } from '../database/db.js';
 import { doctors, patients, medicalTemplates } from '../../shared/schema.js';
 
 async function seed() {

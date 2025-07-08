@@ -39,6 +39,6 @@ export interface IStorage {
 }
 
 // Use DatabaseStorage for persistent storage
-import { DatabaseStorage } from "./databaseStorage";
+import { DatabaseStorage } from "./database/databaseStorage";
 
 export const storage = new DatabaseStorage();

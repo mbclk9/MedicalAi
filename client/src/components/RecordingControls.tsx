@@ -16,7 +16,7 @@ import { useAudioRecording } from "@/hooks/useAudioRecording";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
-import type { MedicalNote } from "@/types/medical";
+import type { MedicalNote } from "@/types";
 
 interface RecordingControlsProps {
   onTranscriptionReady?: (transcription: string) => void;
