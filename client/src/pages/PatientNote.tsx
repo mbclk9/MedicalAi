@@ -177,7 +177,7 @@ export default function PatientNote() {
           <RecordingControls 
             onTranscriptionReady={handleTranscriptionReady}
             visitId={visit.id}
-            templateId={visit.templateId || undefined}
+            templateId={visit.templateId ?? undefined}
           />
 
           {/* Current Transcription Display */}
@@ -200,7 +200,7 @@ export default function PatientNote() {
             patient={patient}
             medicalNote={medicalNote}
             template={selectedTemplate || undefined}
-            transcription={transcription || recording?.transcription}
+            transcription={transcription || recording?.transcription || ""}
           />
         </div>
       </main>

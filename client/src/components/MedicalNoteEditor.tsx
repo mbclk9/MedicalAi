@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,7 +16,12 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { MedicalNote, Visit, Patient, MedicalTemplate } from "@/types/medical";
+import type { MedicalNote, Visit, Patient, MedicalTemplate, MedicalNoteGeneration } from "@/types/medical";
+
+// Explicitly type the diagnosis and medication structures based on MedicalNoteGeneration
+type Diagnosis = MedicalNoteGeneration['assessment']['diagnoses'][0];
+type Medication = MedicalNoteGeneration['plan']['medications'][0];
+type DiagnosticResult = MedicalNoteGeneration['objective']['diagnosticResults'][0];
 
 interface MedicalNoteEditorProps {
   visit: Visit;
@@ -276,8 +281,8 @@ Takip: ${medicalNote.plan?.followUp || 'Belirtilmedi'}
               <div>
                 <h5 className="font-medium text-gray-900 mb-2">Kullandığı İlaçlar</h5>
                 <ul className="list-disc list-inside text-gray-700 space-y-1">
-                  {medicalNote.subjective.medications.map((medication, index) => (
-                    <li key={index}>{medication}</li>
+                  {medicalNote.subjective.medications.map((item: string, index: number) => (
+                    <li key={index}>{item}</li>
                   ))}
                 </ul>
               </div>
@@ -330,11 +335,11 @@ Takip: ${medicalNote.plan?.followUp || 'Belirtilmedi'}
               <div>
                 <h5 className="font-medium text-gray-900 mb-2">Tetkik Sonuçları</h5>
                 <div className="space-y-3">
-                  {medicalNote.objective.diagnosticResults.map((result, index) => (
+                  {medicalNote.objective.diagnosticResults.map((result: DiagnosticResult, index: number) => (
                     <div key={index} className="p-4 border border-gray-200 rounded-lg">
                       <h6 className="font-medium text-gray-900 mb-2">{result.test}:</h6>
                       <ul className="list-disc list-inside text-gray-700 space-y-1">
-                        {result.results.map((item, itemIndex) => (
+                        {result.results.map((item: string, itemIndex: number) => (
                           <li key={itemIndex}>{item}</li>
                         ))}
                       </ul>
@@ -380,7 +385,7 @@ Takip: ${medicalNote.plan?.followUp || 'Belirtilmedi'}
               <div className="p-4 border-l-4 border-l-blue-500 bg-blue-50 rounded-lg">
                 <h5 className="font-semibold text-gray-900 mb-3">Tanılar</h5>
                 <div className="space-y-2">
-                  {medicalNote.assessment.diagnoses.map((diagnosis, index) => (
+                  {medicalNote.assessment.diagnoses.map((diagnosis: Diagnosis, index: number) => (
                     <div key={index} className="flex items-center justify-between">
                       <span className="text-gray-700">{diagnosis.diagnosis}</span>
                       <div className="flex items-center space-x-2">
@@ -403,7 +408,7 @@ Takip: ${medicalNote.plan?.followUp || 'Belirtilmedi'}
                   <div>
                     <h6 className="font-medium text-gray-800 mb-2">Tedavi Planı:</h6>
                     <ul className="list-disc list-inside text-gray-700 text-sm space-y-1">
-                      {medicalNote.plan.treatment.map((item, index) => (
+                      {medicalNote.plan.treatment.map((item: string, index: number) => (
                         <li key={index}>{item}</li>
                       ))}
                     </ul>
@@ -414,7 +419,7 @@ Takip: ${medicalNote.plan?.followUp || 'Belirtilmedi'}
                   <div>
                     <h6 className="font-medium text-gray-800 mb-2">İlaçlar:</h6>
                     <div className="space-y-2">
-                      {medicalNote.plan.medications.map((med, index) => (
+                      {medicalNote.plan.medications.map((med: Medication, index: number) => (
                         <div key={index} className="p-3 bg-gray-50 rounded-lg">
                           <div className="font-medium text-gray-900">{med.name}</div>
                           <div className="text-sm text-gray-600">
@@ -438,7 +443,7 @@ Takip: ${medicalNote.plan?.followUp || 'Belirtilmedi'}
                   <div>
                     <h6 className="font-medium text-gray-800 mb-2">Yaşam Tarzı Önerileri:</h6>
                     <ul className="list-disc list-inside text-gray-700 text-sm space-y-1">
-                      {medicalNote.plan.lifestyle.map((item, index) => (
+                      {medicalNote.plan.lifestyle.map((item: string, index: number) => (
                         <li key={index}>{item}</li>
                       ))}
                     </ul>

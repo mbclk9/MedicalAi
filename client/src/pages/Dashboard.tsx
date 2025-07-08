@@ -67,9 +67,7 @@ export default function Dashboard() {
     }
   };
 
-
-
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null) => {
     switch (status) {
       case "completed":
         return "bg-green-100 text-green-800";
@@ -82,7 +80,7 @@ export default function Dashboard() {
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: string | null) => {
     switch (status) {
       case "completed":
         return "Tamamlandı";
@@ -95,7 +93,7 @@ export default function Dashboard() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string | null) => {
     switch (status) {
       case "completed":
         return CheckCircle;
@@ -108,7 +106,7 @@ export default function Dashboard() {
     }
   };
 
-  const formatDate = (date: Date | string | undefined) => {
+  const formatDate = (date: Date | string | undefined | null) => {
     if (!date) return '';
     const d = new Date(date);
     return d.toLocaleDateString('tr-TR', {
@@ -120,7 +118,7 @@ export default function Dashboard() {
     });
   };
 
-  const formatDuration = (duration?: number) => {
+  const formatDuration = (duration?: number | null) => {
     if (!duration) return '';
     const minutes = Math.floor(duration / 60);
     const seconds = duration % 60;

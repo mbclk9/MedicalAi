@@ -282,7 +282,6 @@ export class DatabaseStorage implements IStorage {
       const [newVisit] = await db.insert(visits).values({
         ...visit,
         status: visit.status || "in_progress",
-        visitDate: visit.visitDate || new Date(),
       }).returning();
 
       console.log("✅ Visit created successfully:", newVisit.id);

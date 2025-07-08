@@ -153,13 +153,7 @@ export default function NewVisit() {
       return;
     }
     
-    const patientId = parseInt(value);
-    if (isNaN(patientId)) {
-      console.log("Invalid patient ID:", value);
-      return;
-    }
-    
-    const patient = patients.find(p => p.id === patientId);
+    const patient = patients.find(p => p.id.toString() === value);
     console.log("Found patient:", patient);
     setSelectedPatient(patient || null);
   };
@@ -359,13 +353,7 @@ export default function NewVisit() {
                             </SelectTrigger>
                             <SelectContent>
                               {patients
-                                .filter(patient => 
-                                  patient.id && 
-                                  patient.name && 
-                                  patient.surname &&
-                                  patient.name.trim() !== "" &&
-                                  patient.surname.trim() !== ""
-                                )
+                                .filter(patient => patient && patient.id)
                                 .map((patient) => (
                                   <SelectItem 
                                     key={`patient-${patient.id}`} 
