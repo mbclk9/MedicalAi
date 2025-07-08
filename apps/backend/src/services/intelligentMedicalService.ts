@@ -1,39 +1,33 @@
 export interface MedicalNoteGeneration {
   visitSummary: string;
   subjective: {
-    complaint: string;
-    currentComplaints: string;
-    medicalHistory: string[];
-    medications: string[];
-    socialHistory?: string;
-    reviewOfSystems?: string;
+    mainComplaint: string;
+    storyOfComplaint: string;
+    medicalHistory: string;
+    medications: string;
+    socialHistory: string;
   };
   objective: {
-    vitalSigns: Record<string, string>;
+    vitalSigns: string;
     physicalExam: string;
-    diagnosticResults: Array<{
-      test: string;
-      results: string[];
-    }>;
+    diagnosticResults: string;
   };
   assessment: {
-    general: string;
+    summary: string;
     diagnoses: Array<{
       diagnosis: string;
-      icd10Code?: string;
-      type: "ana" | "yan" | "komplikasyon";
+      type: string;
     }>;
   };
   plan: {
-    treatment: string[];
+    treatment: string;
     medications: Array<{
       name: string;
       dosage: string;
       frequency: string;
-      duration?: string;
     }>;
     followUp: string;
-    lifestyle: string[];
+    lifestyleRecommendations: string;
   };
 }
 
@@ -200,39 +194,40 @@ export class IntelligentMedicalService {
     const diagnosis = this.generateDiagnosis(transcription, specialty);
     const treatments = this.generateTreatmentPlan(transcription, specialty);
 
+    const medicationsPlan = this.generateMedicationPlan(transcription)
+      .filter(Boolean) as Array<{name: string; dosage: string; frequency: string}>;
+    
     // Professional Turkish medical note format matching Freed.ai PDF style
     const patientName = this.extractPatientName(transcription) || "HASTA";
     
     const result: MedicalNoteGeneration = {
       visitSummary: this.generateProfessionalSummary(transcription, specialty, chiefComplaint, symptoms),
       subjective: {
-        complaint: this.generateSubjectiveSection(transcription, chiefComplaint, symptoms, riskFactors),
-        currentComplaints: this.generateCurrentComplaints(transcription),
-        medicalHistory: this.extractMedicalHistory(transcription),
-        medications: this.extractMedications(transcription),
+        mainComplaint: chiefComplaint,
+        storyOfComplaint: this.generateCurrentComplaints(transcription),
+        medicalHistory: this.extractMedicalHistory(transcription).join(', '),
+        medications: this.extractMedications(transcription).join(', '),
         socialHistory: this.extractSocialHistory(transcription),
-        reviewOfSystems: this.generateReviewOfSystems(transcription, specialty)
       },
       objective: {
-        vitalSigns: this.generateVitalSigns(transcription),
+        vitalSigns: Object.entries(this.generateVitalSigns(transcription)).map(([key, value]) => `${key}: ${value}`).join(', '),
         physicalExam: this.generateObjectiveFindings(transcription, specialty),
-        diagnosticResults: this.extractDiagnosticResults(transcription)
+        diagnosticResults: this.extractDiagnosticResults(transcription).map(r => `${r.test}: ${r.results.join(', ')}`).join('; '),
       },
       assessment: {
-        general: this.generateAssessment(transcription, specialty, chiefComplaint),
+        summary: this.generateAssessment(transcription, specialty, chiefComplaint),
         diagnoses: [
           {
             diagnosis: this.generatePrimaryDiagnosis(transcription, specialty),
-            icd10Code: this.getICD10Code(transcription, specialty),
-            type: "ana" as const
+            type: "ana"
           }
         ]
       },
       plan: {
-        treatment: this.generateDetailedTreatmentPlan(transcription, specialty),
-        medications: this.generateMedicationPlan(transcription),
+        treatment: this.generateDetailedTreatmentPlan(transcription, specialty).join(', '),
+        medications: medicationsPlan.map(m => ({ name: m.name, dosage: m.dosage, frequency: m.frequency })),
         followUp: this.generateFollowUpPlan(transcription, specialty),
-        lifestyle: this.generateLifestyleRecommendations(transcription, specialty)
+        lifestyleRecommendations: this.generateLifestyleRecommendations(transcription, specialty).join(', ')
       }
     };
 
@@ -591,26 +586,16 @@ export class IntelligentMedicalService {
     return treatments;
   }
 
-  private generateMedicationPlan(transcription: string): Array<{name: string; dosage: string; frequency: string; duration?: string}> {
+  private generateMedicationPlan(transcription: string): Array<{name: string; dosage: string; frequency: string}> {
     const text = transcription.toLowerCase();
-    const medications: Array<{name: string; dosage: string; frequency: string; duration?: string}> = [];
+    const medications: Array<{name: string; dosage: string; frequency: string}> = [];
     
     if (/aspirin/.test(text)) {
-      medications.push({
-        name: "Aspirin",
-        dosage: "100 mg",
-        frequency: "Günde 1 kez",
-        duration: "Sürekli"
-      });
+      medications.push({ name: "Aspirin", dosage: "100mg", frequency: "1x1" });
     }
     
-    if (/atacand/.test(text)) {
-      medications.push({
-        name: "Atacand Plus",
-        dosage: "16/12.5 mg",
-        frequency: "Günde 1 kez", 
-        duration: "Sürekli"
-      });
+    if (/atacand.*?plus/.test(text)) {
+      medications.push({ name: "Atacand Plus", dosage: "16/12.5mg", frequency: "1x1" });
     }
     
     return medications;

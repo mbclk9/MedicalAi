@@ -25,33 +25,39 @@ const openai = new OpenAI({
 export interface MedicalNoteGeneration {
   visitSummary: string;
   subjective: {
-    mainComplaint: string;
-    storyOfComplaint: string;
-    medicalHistory: string;
-    medications: string;
-    socialHistory: string;
+    complaint: string;
+    currentComplaints: string;
+    medicalHistory: string[];
+    medications: string[];
+    socialHistory?: string;
+    reviewOfSystems?: string;
   };
   objective: {
-    vitalSigns: string;
+    vitalSigns: Record<string, string>;
     physicalExam: string;
-    diagnosticResults: string;
+    diagnosticResults: Array<{
+      test: string;
+      results: string[];
+    }>;
   };
   assessment: {
-    summary: string;
+    general: string;
     diagnoses: Array<{
       diagnosis: string;
-      type: string;
+      icd10Code?: string;
+      type: "ana" | "yan" | "komplikasyon";
     }>;
   };
   plan: {
-    treatment: string;
+    treatment: string[];
     medications: Array<{
       name: string;
       dosage: string;
       frequency: string;
+      duration?: string;
     }>;
     followUp: string;
-    lifestyleRecommendations: string;
+    lifestyle: string[];
   };
 }
 
@@ -65,7 +71,6 @@ export class AnthropicService {
       console.log(`Claude AI: Generating medical note for ${specialty} with transcription: ${transcription.substring(0, 50)}...`);
       
       const response = await anthropic.messages.create({
-        // "claude-sonnet-4-20250514"
         model: DEFAULT_MODEL_STR,
         system: `Sen Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarında çalışan uzman bir tıbbi sekreter asistanısın. 6698 sayılı KVKK kapsamında hasta mahremiyetini koruyarak SOAP formatında tıbbi not oluşturuyorsun.`,
         max_tokens: 2000,
@@ -77,13 +82,13 @@ export class AnthropicService {
         ],
       });
 
-      const contentBlock = response.content[0];
-      if (!contentBlock || contentBlock.type !== 'text') {
+      const content = response.content?.[0];
+      if (!content || content.type !== 'text') {
         throw new Error('Unexpected response type from Claude API');
       }
 
       // Claude yanıtından JSON parse etmeye çalış
-      const cleanResponse = contentBlock.text.trim();
+      const cleanResponse = (content as any).text.trim();
       let jsonStart = cleanResponse.indexOf('{');
       let jsonEnd = cleanResponse.lastIndexOf('}') + 1;
       
@@ -105,7 +110,7 @@ export class AnthropicService {
         console.log('Claude AI: Trying OpenAI fallback due to Claude API error');
         
         const openaiResponse = await openai.chat.completions.create({
-          model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+          model: "gpt-4o",
           messages: [
             {
               role: "system",
@@ -130,88 +135,99 @@ export class AnthropicService {
         console.error('OpenAI Fallback Error:', openaiError);
       }
       
-      // Hata durumunda intelligent medical service kullan
+      // Final fallback to intelligent medical service
       console.log('AI Services: Using intelligent medical service due to AI API errors');
       return await intelligentMedicalService.generateMedicalNote(transcription, templateStructure, specialty);
     }
   }
 
   private createTurkishMedicalPrompt(transcription: string, templateStructure: any, specialty: string): string {
-    // Şablon yapısını daha basit ve okunabilir bir metne dönüştür
-    const templateGuide = Object.entries(templateStructure || {})
-      .map(([key, value]) => `* ${key}: ${(Array.isArray(value) ? value.join(', ') : value)}`)
-      .join('\n');
-
     return `
-# GÖREV
-Sen, bir doktor ile hasta arasındaki görüşmenin transkripsiyonunu analiz edip, T.C. Sağlık Bakanlığı standartlarına uygun, yapılandırılmış bir tıbbi not (SOAP) oluşturan uzman bir yapay zeka asistanısın. Görevin, sana verilen transkripsiyon metnini girdi olarak almak ve belirtilen JSON yapısında bir çıktı üretmektir.
+Sen Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarında çalışan uzman bir tıbbi sekreter asistanısın.
 
-# KURALLAR
-1.  **SADECE SAĞLANAN TRANSKRİPTİ KULLAN:** Tüm yanıtların yalnızca ve yalnızca aşağıda <transkripsiyon> etiketi içinde sağlanan metne dayanmalıdır. Varsayımlarda bulunma veya bilgi ekleme. Transkriptte olmayan bilgileri boş bırak.
-2.  **TÜRKÇE VE TIBBİ TERMİNOLOJİ:** Çıktıların profesyonel tıbbi dil kullanılarak tamamen Türkçe olmalıdır.
-3.  **JSON ÇIKTISI ZORUNLUDUR:** Yanıtın *sadece* geçerli bir JSON nesnesi olmalıdır. JSON bloğunun dışına asla yorum, açıklama veya herhangi bir metin ekleme.
-4.  **BOŞ ALANLAR:** Transkriptte belirli bir alan için bilgi bulunmuyorsa, alanı boş bir dize ("") veya boş bir dizi ([]) olarak ayarla.
-5.  **KVKK UYUMLULUĞU:** Hasta mahremiyetine ve 6698 sayılı KVKK'ya tam uyum göster.
+HASTA GİZLİLİĞİ UYARISI: Bu tıbbi kayıt 6698 sayılı KVKK kapsamında korunmaktadır.
 
-# ÖRNEK
-Aşağıda, ne tür bir çıktı beklediğimi gösteren bir örnek bulunmaktadır. Bu örneği bir rehber olarak kullan ama ÇIKTININ TEMELİ MUTLAKA <transkripsiyon> ETİKETİ İÇİNDEKİ GERÇEK VERİLER OLMALIDIR.
+Verilen ${specialty} muayenesi transkripsiyon metnini analiz ederek T.C. Sağlık Bakanlığı tıbbi dokümantasyon standartlarına uygun SOAP formatında profesyonel tıbbi not oluştur.
 
-<ornek_diyalog>
-DOKTOR: Merhaba Ayşe Hanım, hoş geldiniz. Neyiniz var?
-HASTA: Merhaba doktor bey. İki haftadır geçmeyen bir baş ağrım var. Özellikle sabahları çok şiddetli oluyor. Bazen midem de bulanıyor. Tansiyon ilacımı düzenli alıyorum.
-DOKTOR: Anlıyorum. Tansiyonunuzu ölçelim. 130/85 mmHg, normal görünüyor. Nörolojik bir muayene yapalım.
-</ornek_diyalog>
+TRANSKRIPSIYON METNİ:
+"${transcription}"
 
-<ornek_json_cikti>
-\`\`\`json
+UZMANLIK ALANI: ${specialty}
+
+ŞABLON YAPISI:
+${JSON.stringify(templateStructure, null, 2)}
+
+T.C. SAĞLIK BAKANLIĞI SOAP FORMATINDA JSON YANITI VER:
+
 {
-  "visitSummary": "Hasta, iki haftadır devam eden ve sabahları şiddetlenen baş ağrısı ve mide bulantısı şikayetleriyle başvurdu. Vital bulguları stabil.",
+  "visitSummary": "Hasta [yaş]/[cinsiyet], [ana şikayet] nedeniyle başvurdu. [Muayene türü] yapıldı. [Genel durum]",
   "subjective": {
-    "mainComplaint": "İki haftadır geçmeyen şiddetli baş ağrısı.",
-    "storyOfComplaint": "Şikayetler iki hafta önce başlamış. Baş ağrısı özellikle sabahları şiddetleniyor ve bazen mide bulantısı eşlik ediyor.",
-    "medicalHistory": "Hipertansiyon",
-    "medications": "Tansiyon ilacı (adı belirtilmedi)",
-    "socialHistory": ""
+    "complaint": "Hastanın ana şikayeti - kendi ifadesiyle",
+    "currentComplaints": "Mevcut hastalık öyküsü: şikayetin başlama zamanı, karakteri, süresi, etkileyen faktörler",
+    "medicalHistory": ["Diabetes mellitus", "Hipertansiyon", "Kalp hastalığı vb."],
+    "medications": ["İlaç adı - doz - kullanım şekli", "örn: Metformin 500mg 2x1"],
+    "socialHistory": "Sigara/alkol kullanımı, meslek, aile öyküsü",
+    "reviewOfSystems": "Konuşmada geçen sistem yakınmaları"
   },
   "objective": {
-    "vitalSigns": "Tansiyon: 130/85 mmHg",
-    "physicalExam": "Nörolojik muayene yapıldı (detay belirtilmedi).",
-    "diagnosticResults": ""
+    "vitalSigns": {
+      "bloodPressure": "120/80 mmHg",
+      "heartRate": "72/dk", 
+      "temperature": "36.5°C",
+      "respiratoryRate": "16/dk",
+      "oxygen": "SaO2: %98"
+    },
+    "physicalExam": "Genel durum: [iyi/orta/kötü], Bilinç: [açık/kapalı], Sistem bazında fizik muayene bulguları",
+    "diagnosticResults": [
+      {
+        "test": "Laboratuvar/Görüntüleme test adı",
+        "results": ["Test sonuçları ve değerleri"]
+      }
+    ]
   },
   "assessment": {
-    "summary": "Hastanın mevcut durumu, hipertansiyon öyküsüyle birlikte değerlendirildiğinde daha ileri tetkik gerektiren bir baş ağrısı tablosu sunmaktadır.",
+    "general": "Klinik tablonun genel değerlendirmesi",
     "diagnoses": [
       {
-        "diagnosis": "Atipik Baş Ağrısı",
-        "type": "ön tanı"
+        "diagnosis": "Türkçe tanı adı",
+        "icd10Code": "ICD-10 kodu",
+        "type": "ana"
       }
     ]
   },
   "plan": {
-    "treatment": "İleri tetkik planlandı.",
-    "medications": [],
-    "followUp": "Nöroloji konsültasyonu istendi.",
-    "lifestyleRecommendations": "Tuzsuz diyet ve düzenli tansiyon takibi."
+    "treatment": ["Medikal tedavi yaklaşımı", "Cerrahi girişim gereksinimi"],
+    "medications": [
+      {
+        "name": "Türkiye'de kullanılan ilaç adı",
+        "dosage": "mg/ml/g cinsinden doz",
+        "frequency": "1x1, 2x1, 3x1",
+        "duration": "7 gün, 1 ay vb."
+      }
+    ],
+    "followUp": "X gün/hafta/ay sonra kontrol",
+    "lifestyle": ["Diyet önerileri", "Egzersiz", "Yaşam tarzı değişiklikleri"]
   }
 }
-\`\`\`
-</ornek_json_cikti>
 
-# İŞLENECEK VERİ
-Şimdi, lütfen aşağıdaki transkripsiyonu analiz et ve yukarıdaki kurallara ve yapıya göre JSON çıktısını oluştur.
-
-<transkripsiyon>
-${transcription}
-</transkripsiyon>
-
-<istenilen_json_cikti>
+T.C. SAĞLIK BAKANLIĞI STANDARTLARI:
+• 6698 sayılı KVKK uyumluluğu - hasta mahremiyeti korunmalı
+• Türk Tabipleri Birliği Hekimlik Meslek Etiği Kuralları uygun
+• SGK Sosyal Güvenlik Kurumu işlem kodlaması düşünülerek
+• TİTCK Türkiye İlaç ve Tıbbi Cihaz Kurumu onaylı ilaçlar
+• Hasta Hakları Yönetmeliği'ne uygun yaklaşım
+• ICD-10 tanı kodlama sistemi (sadece kesin tanılar için)
+• Türkiye Halk Sağlığı Kurumu kılavuzlarına uygun
+• Sadece konuşmada açıkça geçen bilgileri kullan
+• Varsayım yapma, objektif değerlendirme yap
+• Tıbbi terminolojiyi Türkçe kullan
+• JSON formatında yanıt ver
 `;
   }
 
   async generateVisitSummary(transcription: string): Promise<string> {
     try {
       const response = await anthropic.messages.create({
-        // "claude-sonnet-4-20250514"
         model: DEFAULT_MODEL_STR,
         system: `Sen tıbbi transkripsiyon uzmanısın. Doktor-hasta görüşmelerini kısa ve öz şekilde özetliyorsun.`,
         max_tokens: 500,
@@ -223,12 +239,12 @@ ${transcription}
         ],
       });
 
-      const contentBlock = response.content[0];
-      if (!contentBlock || contentBlock.type !== 'text') {
+      const content = response.content?.[0];
+      if (!content || content.type !== 'text') {
         throw new Error('Unexpected response type from Claude');
       }
 
-      return contentBlock.text.trim();
+      return (content as any).text.trim();
     } catch (error) {
       console.error("Claude visit summary error:", error);
       throw new Error(`Failed to generate visit summary: ${error instanceof Error ? error.message : 'Unknown error'}`);

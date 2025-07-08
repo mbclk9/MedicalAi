@@ -3,7 +3,7 @@
  * Centralized API communication functions
  */
 
-import { Patient, Visit, MedicalNote, MedicalTemplate, Doctor } from '../../../shared/schema.js';
+import { Patient, Visit, MedicalNote, MedicalTemplate, Doctor } from '@repo/db';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 

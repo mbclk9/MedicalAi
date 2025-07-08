@@ -1,11 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage } from "../storage";
 import { deepgramService } from "./services/deepgramService";
 import { anthropicService } from "./services/anthropicService";
 import multer from "multer";
 import { z } from "zod";
-import { insertVisitSchema, insertPatientSchema, insertMedicalNoteSchema } from "@shared/schema";
+import { insertVisitSchema, insertPatientSchema, insertMedicalNoteSchema } from "@repo/db";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),

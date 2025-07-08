@@ -1,38 +1,25 @@
 /**
  * TıpScribe TypeScript Definitions
- * Centralized type definitions for the application
+ *
+ * This file re-exports all shared types from the central @repo/db package
+ * for use across the frontend application. It also defines frontend-specific
+ * types for UI components, form data, and other client-side concerns.
  */
 
-// Re-export shared schema types
-export type {
-  Doctor,
-  Patient,
-  Visit,
-  MedicalNote,
-  Recording,
-  MedicalTemplate,
-  InsertDoctor,
-  InsertPatient,
-  InsertVisit,
-  InsertMedicalNote,
-  InsertRecording,
-  InsertTemplate,
-} from '../../../shared/schema.js';
+// Import and re-export all shared database types and schemas
+export * from "@repo/db";
 
-// API Response Types
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  success: boolean;
-}
+// Re-export specific types for clarity if needed, though '*' is generally sufficient
+import type { Patient as DbPatient, MedicalTemplate as DbMedicalTemplate, Visit as DbVisit, MedicalNote as DbMedicalNote } from '@repo/db';
+export type Patient = DbPatient;
+export type MedicalTemplate = DbMedicalTemplate;
+export type Visit = DbVisit;
+export type MedicalNote = DbMedicalNote;
 
-export interface ApiError {
-  message: string;
-  status: number;
-  details?: any;
-}
 
-// Medical Note Generation Types
+// --- Frontend-Specific Types ---
+
+// Represents the structure of the AI-generated medical note content
 export interface MedicalNoteGeneration {
   visitSummary: string;
   subjective: {
@@ -40,8 +27,6 @@ export interface MedicalNoteGeneration {
     currentComplaints: string;
     medicalHistory: string[];
     medications: string[];
-    socialHistory?: string;
-    reviewOfSystems?: string;
   };
   objective: {
     vitalSigns: Record<string, string>;
@@ -72,18 +57,35 @@ export interface MedicalNoteGeneration {
   };
 }
 
-// Audio Recording Types
+// State for the audio recording hook
+export interface RecordingState {
+  isRecording: boolean;
+  isPaused: boolean;
+  duration: number;
+  transcription: string;
+  confidence: number;
+}
+
+// Result from the transcription service
 export interface TranscriptionResult {
   text: string;
   confidence: number;
-  words?: Array<{
-    word: string;
-    start: number;
-    end: number;
-    confidence: number;
-  }>;
 }
 
+// API Response Types
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
+  success: boolean;
+}
+
+export interface ApiError {
+  message: string;
+  status: number;
+  details?: any;
+}
+
+// Audio Recording Types
 export interface AudioRecordingState {
   isRecording: boolean;
   isPaused: boolean;

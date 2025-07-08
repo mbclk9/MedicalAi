@@ -1,11 +1,42 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import cors from "cors";
+import { client, db } from "@repo/db";
+
+// Veritabanı bağlantısını test etmek için bir fonksiyon
+async function testDbConnection() {
+  try {
+    console.log("🔗 Veritabanına bağlanılıyor...");
+    await client.connect();
+    console.log("✅ Veritabanı istemcisi başarıyla bağlandı.");
+    // Basit bir sorgu çalıştırarak bağlantıyı doğrula
+    await db.execute('SELECT 1');
+    console.log("✅ Veritabanı test sorgusu başarılı.");
+  } catch (err) {
+    console.error("❌ Veritabanı bağlantısı başarısız:", err);
+    process.exit(1); // Hata durumunda uygulamayı sonlandır
+  }
+}
+
+// Bağlantıyı düzgün bir şekilde kapatmak için fonksiyon
+async function closeDbConnection() {
+    console.log("🔌 Veritabanı bağlantısı kapatılıyor...");
+    await client.end();
+    console.log("✅ Veritabanı bağlantısı kapatıldı.");
+}
 
 const app = express();
+
+// CORS middleware
+app.use(cors({
+  origin: ["http://localhost:3000", "http://localhost:3001"],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -29,7 +60,7 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      console.log(`[${new Date().toLocaleTimeString()}] ${logLine}`);
     }
   });
 
@@ -37,34 +68,41 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Test DB connection on startup
+  await testDbConnection();
+
   const server = await registerRoutes(app);
 
+  // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    console.error('Error:', err);
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     res.status(status).json({ message });
-    throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  // Health check endpoint
+  app.get('/health', (req, res) => {
+    res.json({ status: 'OK', timestamp: new Date().toISOString() });
   });
+
+  const port = process.env.PORT || 5000;
+  server.listen(port, () => {
+    console.log(`🚀 Backend server running on port ${port}`);
+    console.log(`📡 API endpoints available at http://localhost:${port}/api`);
+  });
+
+  // Graceful shutdown
+  const gracefulShutdown = (signal: string) => {
+    console.log(`\n🛑 Alınan sinyal: ${signal}, sunucu kapatılıyor...`);
+    server.close(async () => {
+      await closeDbConnection();
+      console.log('✅ Sunucu başarıyla kapatıldı.');
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
 })();

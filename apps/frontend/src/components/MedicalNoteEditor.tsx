@@ -1,474 +1,420 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  Copy, 
-  Wand2, 
-  Clock, 
   FileText, 
+  User, 
+  Heart, 
   Activity, 
-  ClipboardCheck, 
-  Calendar 
+  Clipboard, 
+  Calendar,
+  Clock,
+  Save,
+  Download,
+  Edit3
 } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import type { MedicalNote, Visit, Patient, MedicalTemplate } from "@/types/medical";
+import type { MedicalNote, Visit, Patient } from "@/types/medical";
 
 interface MedicalNoteEditorProps {
-  visit: Visit;
-  patient: Patient;
+  visit?: Visit & { patient: Patient };
   medicalNote?: MedicalNote;
-  template?: MedicalTemplate;
-  transcription?: string;
+  onSave?: (note: Partial<MedicalNote>) => void;
+  isEditing?: boolean;
 }
 
 export function MedicalNoteEditor({ 
   visit, 
-  patient, 
   medicalNote, 
-  template, 
-  transcription 
+  onSave, 
+  isEditing = false 
 }: MedicalNoteEditorProps) {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [editMode, setEditMode] = useState(isEditing);
+  const [noteData, setNoteData] = useState<Partial<MedicalNote>>(medicalNote || {});
 
-  const generateNoteMutation = useMutation({
-    mutationFn: async (data: { transcription: string; templateId?: number; visitId: number }) => {
-      const response = await apiRequest("POST", "/api/generate-note", data);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/visits", visit.id.toString()] });
-      toast({
-        title: "Başarılı",
-        description: "Tıbbi not AI tarafından oluşturuldu.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Hata",
-        description: "Not oluşturulurken hata oluştu: " + error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleGenerateNote = async () => {
-    if (!transcription) {
-      toast({
-        title: "Uyarı",
-        description: "Not oluşturmak için önce ses kaydı yapın.",
-        variant: "destructive",
-      });
-      return;
+  useEffect(() => {
+    if (medicalNote) {
+      setNoteData(medicalNote);
     }
+  }, [medicalNote]);
 
-    setIsGenerating(true);
-    try {
-      await generateNoteMutation.mutateAsync({
-        transcription,
-        templateId: template?.id,
-        visitId: visit.id,
-      });
-    } finally {
-      setIsGenerating(false);
+  const handleSave = () => {
+    if (onSave) {
+      onSave(noteData);
     }
+    setEditMode(false);
   };
 
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Kopyalandı",
-        description: "Metin panoya kopyalandı.",
-      });
-    } catch (error) {
-      toast({
-        title: "Hata",
-        description: "Kopyalama başarısız.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const copyAllNote = () => {
-    if (!medicalNote) return;
-    
-    const fullNote = `
-HASTA BİLGİLERİ:
-${patient.name} ${patient.surname}
-${patient.tcKimlik ? `TC: ${patient.tcKimlik}` : ''}
-${patient.sgkNumber ? `SGK: ${patient.sgkNumber}` : ''}
-
-MUAYENE ÖZETİ:
-${medicalNote.visitSummary || 'Özet bulunamadı'}
-
-SUBJEKTİF (ANAMNEZ):
-Şikayetler: ${medicalNote.subjective?.complaint || 'Belirtilmedi'}
-Mevcut Yakınmalar: ${medicalNote.subjective?.currentComplaints || 'Belirtilmedi'}
-Tıbbi Öykü: ${medicalNote.subjective?.medicalHistory?.join(', ') || 'Belirtilmedi'}
-İlaçlar: ${medicalNote.subjective?.medications?.join(', ') || 'Belirtilmedi'}
-
-OBJEKTİF (FİZİK MUAYENE):
-Vital Bulgular: ${Object.entries(medicalNote.objective?.vitalSigns || {}).map(([key, value]) => `${key}: ${value}`).join(', ')}
-Fizik Muayene: ${medicalNote.objective?.physicalExam || 'Belirtilmedi'}
-
-DEĞERLENDİRME VE PLAN:
-Genel Değerlendirme: ${medicalNote.assessment?.general || 'Belirtilmedi'}
-Tedavi Planı: ${medicalNote.plan?.treatment?.join(', ') || 'Belirtilmedi'}
-Takip: ${medicalNote.plan?.followUp || 'Belirtilmedi'}
-    `.trim();
-    
-    copyToClipboard(fullNote);
-  };
-
-  const formatDate = (date: Date | string | undefined) => {
+  const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return '';
     const d = new Date(date);
     return d.toLocaleDateString('tr-TR', {
       day: '2-digit',
       month: '2-digit',
-      year: '2-digit',
+      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
   };
 
-  const getVisitTypeText = (type: string) => {
-    switch (type) {
-      case 'ilk':
-        return 'İlk Muayene';
-      case 'kontrol':
-        return 'Kontrol Muayenesi';
-      case 'konsultasyon':
-        return 'Konsültasyon';
-      default:
-        return type;
-    }
-  };
+  const subjective = medicalNote?.subjective as any;
+  const objective = medicalNote?.objective as any;
+  const assessment = medicalNote?.assessment as any;
+  const plan = medicalNote?.plan as any;
 
   return (
     <div className="space-y-6">
-      {/* Patient Header */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold">
-                  {patient.name[0]}{patient.surname[0]}
-                </span>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <FileText className="h-5 w-5 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900">Tıbbi Not</h2>
+            {visit && (
+              <p className="text-sm text-gray-500">
+                {visit.patient?.name} {visit.patient?.surname} - {formatDate(visit.visitDate)}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          {!editMode ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setEditMode(true)}
+                className="gap-2"
+              >
+                <Edit3 className="h-4 w-4" />
+                Düzenle
+              </Button>
+              <Button variant="outline" className="gap-2">
+                <Download className="h-4 w-4" />
+                İndir
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setEditMode(false)}
+              >
+                İptal
+              </Button>
+              <Button
+                onClick={handleSave}
+                className="medical-gradient text-white gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Kaydet
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Patient Info */}
+      {visit?.patient && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Hasta Bilgileri
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Ad Soyad</label>
+                <p className="font-medium">{visit.patient.name} {visit.patient.surname}</p>
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {patient.name} {patient.surname}
-                </h3>
-                <p className="text-gray-600">
-                  {getVisitTypeText(visit.visitType)} • {formatDate(visit.visitDate)}
-                </p>
+                <label className="text-sm font-medium text-gray-500">TC Kimlik</label>
+                <p className="font-medium">{visit.patient.tcKimlik || '-'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Telefon</label>
+                <p className="font-medium">{visit.patient.phone || '-'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Muayene Türü</label>
+                <Badge variant="outline">
+                  {visit.visitType === 'ilk' ? 'İlk Muayene' : 
+                   visit.visitType === 'kontrol' ? 'Kontrol' : 'Konsültasyon'}
+                </Badge>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                onClick={handleGenerateNote}
-                disabled={isGenerating || !transcription}
-                className="medical-gradient text-white"
-              >
-                <Wand2 className="mr-2 h-4 w-4" />
-                {isGenerating ? "AI Not Oluşturuyor..." : "AI ile Not Oluştur"}
-              </Button>
-              {medicalNote && (
-                <Button
-                  variant="outline"
-                  onClick={copyAllNote}
-                >
-                  <Copy className="mr-2 h-4 w-4" />
-                  Tümünü Kopyala
-                </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Subjective (Anamnez) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-blue-600" />
+              Subjektif (Anamnez)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Ana Şikayet</label>
+              {editMode ? (
+                <Textarea
+                  value={subjective?.complaint || ''}
+                  onChange={(e) => setNoteData({
+                    ...noteData,
+                    subjective: { ...subjective, complaint: e.target.value }
+                  })}
+                  className="mt-1"
+                  rows={2}
+                />
+              ) : (
+                <p className="mt-1 text-sm">{subjective?.complaint || 'Belirtilmemiş'}</p>
               )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Mevcut Şikayetler</label>
+              {editMode ? (
+                <Textarea
+                  value={subjective?.currentComplaints || ''}
+                  onChange={(e) => setNoteData({
+                    ...noteData,
+                    subjective: { ...subjective, currentComplaints: e.target.value }
+                  })}
+                  className="mt-1"
+                  rows={3}
+                />
+              ) : (
+                <p className="mt-1 text-sm">{subjective?.currentComplaints || 'Belirtilmemiş'}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Tıbbi Geçmiş</label>
+              <div className="mt-1">
+                {subjective?.medicalHistory?.length > 0 ? (
+                  <ul className="list-disc list-inside space-y-1">
+                    {subjective.medicalHistory.map((item: string, index: number) => (
+                      <li key={index} className="text-sm">{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500">Özel bir tıbbi geçmiş yok</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Objective (Fizik Muayene) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-green-600" />
+              Objektif (Fizik Muayene)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Vital Bulgular</label>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Tansiyon:</span>
+                  <span className="font-medium">{objective?.vitalSigns?.bloodPressure || '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Nabız:</span>
+                  <span className="font-medium">{objective?.vitalSigns?.heartRate || '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Ateş:</span>
+                  <span className="font-medium">{objective?.vitalSigns?.temperature || '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Solunum:</span>
+                  <span className="font-medium">{objective?.vitalSigns?.respiratoryRate || '-'}</span>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Fizik Muayene</label>
+              {editMode ? (
+                <Textarea
+                  value={objective?.physicalExam || ''}
+                  onChange={(e) => setNoteData({
+                    ...noteData,
+                    objective: { ...objective, physicalExam: e.target.value }
+                  })}
+                  className="mt-1"
+                  rows={4}
+                />
+              ) : (
+                <p className="mt-1 text-sm">{objective?.physicalExam || 'Normal'}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Assessment (Değerlendirme) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-red-600" />
+              Değerlendirme
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Genel Değerlendirme</label>
+              {editMode ? (
+                <Textarea
+                  value={assessment?.general || ''}
+                  onChange={(e) => setNoteData({
+                    ...noteData,
+                    assessment: { ...assessment, general: e.target.value }
+                  })}
+                  className="mt-1"
+                  rows={3}
+                />
+              ) : (
+                <p className="mt-1 text-sm">{assessment?.general || 'Belirtilmemiş'}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Tanılar</label>
+              <div className="mt-2 space-y-2">
+                {assessment?.diagnoses?.length > 0 ? (
+                  assessment.diagnoses.map((diagnosis: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm">{diagnosis.diagnosis}</span>
+                      <div className="flex items-center gap-2">
+                        {diagnosis.icd10Code && (
+                          <Badge variant="secondary" className="text-xs">
+                            {diagnosis.icd10Code}
+                          </Badge>
+                        )}
+                        <Badge 
+                          variant={diagnosis.type === 'ana' ? 'default' : 'outline'}
+                          className="text-xs"
+                        >
+                          {diagnosis.type}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">Tanı belirtilmemiş</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Plan (Tedavi Planı) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clipboard className="h-5 w-5 text-purple-600" />
+              Plan
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Tedavi</label>
+              {editMode ? (
+                <Textarea
+                  value={plan?.treatment?.join('\n') || ''}
+                  onChange={(e) => setNoteData({
+                    ...noteData,
+                    plan: { ...plan, treatment: e.target.value.split('\n') }
+                  })}
+                  className="mt-1"
+                  rows={3}
+                />
+              ) : (
+                <div className="mt-1">
+                  {plan?.treatment?.length > 0 ? (
+                    <ul className="list-disc list-inside space-y-1">
+                      {plan.treatment.map((item: string, index: number) => (
+                        <li key={index} className="text-sm">{item}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-500">Tedavi planı belirtilmemiş</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">İlaçlar</label>
+              <div className="mt-2 space-y-2">
+                {plan?.medications?.length > 0 ? (
+                  plan.medications.map((med: any, index: number) => (
+                    <div key={index} className="p-2 bg-blue-50 rounded text-sm">
+                      <div className="font-medium">{med.name}</div>
+                      <div className="text-gray-600">
+                        {med.dosage} - {med.frequency}
+                        {med.duration && ` - ${med.duration}`}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">İlaç reçete edilmemiş</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Takip</label>
+              <p className="mt-1 text-sm">{plan?.followUp || 'Belirtilmemiş'}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Visit Summary */}
       {medicalNote?.visitSummary && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center">
-                <FileText className="mr-2 h-5 w-5" />
-                Muayene Özeti
-              </CardTitle>
-              <div className="flex items-center space-x-2">
-                {visit.duration && (
-                  <Badge variant="outline">
-                    <Clock className="mr-1 h-3 w-3" />
-                    {Math.floor(visit.duration / 60)} dakika
-                  </Badge>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(medicalNote.visitSummary!)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-orange-600" />
+              Muayene Özeti
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-700 leading-relaxed">{medicalNote.visitSummary}</p>
+            <p className="text-sm">{medicalNote.visitSummary}</p>
           </CardContent>
         </Card>
       )}
 
-      {/* Subjective Section */}
-      {medicalNote?.subjective && (
+      {/* Transcription */}
+      {medicalNote?.transcription && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center">
-                <FileText className="mr-2 h-5 w-5" />
-                Subjektif (Anamnez)
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => copyToClipboard(JSON.stringify(medicalNote.subjective, null, 2))}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-gray-600" />
+              Transkripsiyon
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {medicalNote.subjective.complaint && (
-              <div>
-                <h5 className="font-medium text-gray-900 mb-2">Şikayetler</h5>
-                <p className="text-gray-700">{medicalNote.subjective.complaint}</p>
-              </div>
-            )}
-            
-            {medicalNote.subjective.currentComplaints && (
-              <div>
-                <h5 className="font-medium text-gray-900 mb-2">Mevcut Yakınmalar</h5>
-                <p className="text-gray-700">{medicalNote.subjective.currentComplaints}</p>
-              </div>
-            )}
-
-            {medicalNote.subjective.medicalHistory && medicalNote.subjective.medicalHistory.length > 0 && (
-              <div>
-                <h5 className="font-medium text-gray-900 mb-2">Tıbbi Öykü</h5>
-                <ul className="list-disc list-inside text-gray-700 space-y-1">
-                  {medicalNote.subjective.medicalHistory.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {medicalNote.subjective.medications && medicalNote.subjective.medications.length > 0 && (
-              <div>
-                <h5 className="font-medium text-gray-900 mb-2">Kullandığı İlaçlar</h5>
-                <ul className="list-disc list-inside text-gray-700 space-y-1">
-                  {medicalNote.subjective.medications.map((medication, index) => (
-                    <li key={index}>{medication}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Objective Section */}
-      {medicalNote?.objective && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center">
-                <Activity className="mr-2 h-5 w-5" />
-                Objektif (Fizik Muayene)
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => copyToClipboard(JSON.stringify(medicalNote.objective, null, 2))}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {medicalNote.objective.vitalSigns && Object.keys(medicalNote.objective.vitalSigns).length > 0 && (
-              <div>
-                <h5 className="font-medium text-gray-900 mb-2">Vital Bulgular</h5>
-                <div className="grid grid-cols-2 gap-4">
-                  {Object.entries(medicalNote.objective.vitalSigns).map(([key, value]) => (
-                    <div key={key} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-600">{key}</div>
-                      <div className="text-lg font-semibold text-gray-900">{value}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {medicalNote.objective.physicalExam && (
-              <div>
-                <h5 className="font-medium text-gray-900 mb-2">Fizik Muayene</h5>
-                <p className="text-gray-700">{medicalNote.objective.physicalExam}</p>
-              </div>
-            )}
-
-            {medicalNote.objective.diagnosticResults && medicalNote.objective.diagnosticResults.length > 0 && (
-              <div>
-                <h5 className="font-medium text-gray-900 mb-2">Tetkik Sonuçları</h5>
-                <div className="space-y-3">
-                  {medicalNote.objective.diagnosticResults.map((result, index) => (
-                    <div key={index} className="p-4 border border-gray-200 rounded-lg">
-                      <h6 className="font-medium text-gray-900 mb-2">{result.test}:</h6>
-                      <ul className="list-disc list-inside text-gray-700 space-y-1">
-                        {result.results.map((item, itemIndex) => (
-                          <li key={itemIndex}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Assessment & Plan */}
-      {(medicalNote?.assessment || medicalNote?.plan) && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center">
-                <ClipboardCheck className="mr-2 h-5 w-5" />
-                Değerlendirme ve Plan
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => copyToClipboard(JSON.stringify({
-                  assessment: medicalNote.assessment,
-                  plan: medicalNote.plan
-                }, null, 2))}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {medicalNote.assessment?.general && (
-              <div>
-                <h5 className="font-medium text-gray-900 mb-2">Genel Değerlendirme</h5>
-                <p className="text-gray-700">{medicalNote.assessment.general}</p>
-              </div>
-            )}
-
-            {medicalNote.assessment?.diagnoses && medicalNote.assessment.diagnoses.length > 0 && (
-              <div className="p-4 border-l-4 border-l-blue-500 bg-blue-50 rounded-lg">
-                <h5 className="font-semibold text-gray-900 mb-3">Tanılar</h5>
-                <div className="space-y-2">
-                  {medicalNote.assessment.diagnoses.map((diagnosis, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-gray-700">{diagnosis.diagnosis}</span>
-                      <div className="flex items-center space-x-2">
-                        {diagnosis.icd10Code && (
-                          <Badge variant="outline">{diagnosis.icd10Code}</Badge>
-                        )}
-                        <Badge variant={diagnosis.type === 'ana' ? 'default' : 'secondary'}>
-                          {diagnosis.type}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {medicalNote.plan && (
-              <div className="space-y-4">
-                {medicalNote.plan.treatment && medicalNote.plan.treatment.length > 0 && (
-                  <div>
-                    <h6 className="font-medium text-gray-800 mb-2">Tedavi Planı:</h6>
-                    <ul className="list-disc list-inside text-gray-700 text-sm space-y-1">
-                      {medicalNote.plan.treatment.map((item, index) => (
-                        <li key={index}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {medicalNote.plan.medications && medicalNote.plan.medications.length > 0 && (
-                  <div>
-                    <h6 className="font-medium text-gray-800 mb-2">İlaçlar:</h6>
-                    <div className="space-y-2">
-                      {medicalNote.plan.medications.map((med, index) => (
-                        <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                          <div className="font-medium text-gray-900">{med.name}</div>
-                          <div className="text-sm text-gray-600">
-                            {med.dosage} • {med.frequency}
-                            {med.duration && ` • ${med.duration}`}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {medicalNote.plan.followUp && (
-                  <div>
-                    <h6 className="font-medium text-gray-800 mb-2">Kontrol:</h6>
-                    <p className="text-gray-700 text-sm">{medicalNote.plan.followUp}</p>
-                  </div>
-                )}
-
-                {medicalNote.plan.lifestyle && medicalNote.plan.lifestyle.length > 0 && (
-                  <div>
-                    <h6 className="font-medium text-gray-800 mb-2">Yaşam Tarzı Önerileri:</h6>
-                    <ul className="list-disc list-inside text-gray-700 text-sm space-y-1">
-                      {medicalNote.plan.lifestyle.map((item, index) => (
-                        <li key={index}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* No Note State */}
-      {!medicalNote && (
-        <Card className="text-center py-12">
           <CardContent>
-            <FileText className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Henüz tıbbi not oluşturulmadı
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Ses kaydı yapın ve AI ile otomatik tıbbi not oluşturun
-            </p>
-            <Button
-              onClick={handleGenerateNote}
-              disabled={!transcription}
-              className="medical-gradient text-white"
-            >
-              <Wand2 className="mr-2 h-4 w-4" />
-              AI ile Not Oluştur
-            </Button>
+            <ScrollArea className="h-32">
+              <p className="text-sm text-gray-600">{medicalNote.transcription}</p>
+            </ScrollArea>
           </CardContent>
         </Card>
       )}
