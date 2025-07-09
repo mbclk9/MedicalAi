@@ -7,7 +7,25 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "outputs": ["dist/**", ".next/**"],
+      "env": [
+        "NODE_ENV",
+        "DATABASE_URL",
+        "ANTHROPIC_API_KEY",
+        "DEEPGRAM_API_KEY", 
+        "OPENAI_API_KEY"
+      ]
+    },
+    "frontend#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "env": [
+        "VITE_API_BASE_URL"
+      ]
+    },
+    "backend#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
       "env": [
         "NODE_ENV",
         "DATABASE_URL",
@@ -17,39 +35,16 @@
       ]
     },
     "dev": {
-      "dependsOn": ["^build"],
       "cache": false,
-      "persistent": true,
-      "env": [
-        "NODE_ENV",
-        "DATABASE_URL",
-        "ANTHROPIC_API_KEY",
-        "DEEPGRAM_API_KEY",
-        "OPENAI_API_KEY"
-      ]
+      "persistent": true
     },
-    "lint": {
-      "dependsOn": ["^build"]
-    },
-    "type-check": {
-      "dependsOn": ["^build"]
-    },
+    "lint": {},
     "db:push": {
-      "cache": false,
-      "env": ["DATABASE_URL"]
+      "cache": false
     },
     "db:studio": {
       "cache": false,
-      "persistent": true,
-      "env": ["DATABASE_URL"]
-    },
-    "db:generate": {
-      "cache": false,
-      "outputs": ["migrations/**"],
-      "env": ["DATABASE_URL"]
-    },
-    "clean": {
-      "cache": false
+      "persistent": true
     }
   }
 }
