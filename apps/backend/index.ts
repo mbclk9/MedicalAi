@@ -432,3 +432,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(error);
   process.exit(1);
 });
+
+// Export the app for Vercel serverless functions
+export default app;

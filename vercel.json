@@ -1,17 +1,17 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build:frontend",
   "outputDirectory": "apps/frontend/dist",
   "installCommand": "npm install",
   "framework": null,
   "functions": {
-    "apps/backend/index.ts": {
+    "api/[...path].js": {
       "runtime": "nodejs18.x"
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/apps/backend/index.ts"
+      "destination": "/api/[...path].js"
     }
   ],
   "headers": [
