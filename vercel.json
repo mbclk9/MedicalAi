@@ -21,6 +21,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "app": "ai-medical-assistant"
+  ]
 }
