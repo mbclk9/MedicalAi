@@ -5,19 +5,19 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsup index.ts --format cjs,esm --dts", 
-    "dev": "tsup index.ts --format cjs,esm --dts --watch"
+    "build": "npx tsup index.ts --format cjs,esm --dts",
+    "dev": "npx tsup index.ts --format cjs,esm --dts --watch"
   },
   "devDependencies": {
-    "tsup": "^8.x.x", 
+    "tsup": "^8.x.x",
     "typescript": "^5.x.x",
     "@types/node": "^20.x.x"
-    
+
   },
   "dependencies": {
     "drizzle-orm": "^0.30.x",
-    "pg": "^8.x.x", 
-    "@repo/types": "workspace:*" 
+    "pg": "^8.x.x",
+    "drizzle-zod": "^0.5.1" 
   },
   "exports": {
     ".": {
