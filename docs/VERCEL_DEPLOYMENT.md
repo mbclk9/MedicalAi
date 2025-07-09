@@ -8,10 +8,11 @@ Bu rehber, TıpScribe AI Tıbbi Asistan uygulamasını Vercel'de nasıl deploy e
 
 ### ✅ Yapılan Düzeltmeler:
 1. **Vercel.json Konfigürasyonu**: Monorepo yapısı için optimize edildi
-2. **Build Scripts**: Root seviyede Vercel-specific build komutları eklendi
+2. **Build Scripts**: Turbo build hem frontend hem backend için çalışıyor
 3. **API Routing**: Serverless fonksiyonlar için düzeltildi
-4. **Frontend Build**: Production için optimize edildi
-5. **Environment Variables**: Vercel deployment için hazırlandı
+4. **Static Files**: Frontend assets doğru serve ediliyor
+5. **Environment Variables**: Production için optimize edildi
+6. **CORS**: API istekleri için doğru header'lar eklendi
 
 ## 🚀 Deployment Adımları
 
@@ -19,7 +20,7 @@ Bu rehber, TıpScribe AI Tıbbi Asistan uygulamasını Vercel'de nasıl deploy e
 ```bash
 # Değişiklikleri commit edin
 git add .
-git commit -m "Fix: Vercel deployment configuration"
+git commit -m "Fix: Vercel deployment configuration - all issues resolved"
 git push origin main
 ```
 
@@ -38,13 +39,16 @@ ANTHROPIC_API_KEY=your_anthropic_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
 DEEPGRAM_API_KEY=your_deepgram_api_key_here
 NODE_ENV=production
+VITE_API_BASE_URL=/api
 ```
+
+⚠️ **Önemli**: `VITE_API_BASE_URL` değerini mutlaka `/api` olarak ayarlayın!
 
 ### 4. Build Ayarları
 Vercel otomatik olarak aşağıdaki ayarları kullanacak:
-- **Build Command**: `npm run build:vercel`
+- **Build Command**: `turbo build --filter=frontend --filter=backend`
 - **Output Directory**: `apps/frontend/dist`
-- **Install Command**: `npm run install:all`
+- **Install Command**: `npm install`
 
 ### 5. Deploy Edin
 "Deploy" butonuna tıklayın. Build süreci başlayacak.
@@ -54,7 +58,7 @@ Vercel otomatik olarak aşağıdaki ayarları kullanacak:
 ### Turbo Build Pipeline:
 ```
 1. packages/db build → Database schema ve types
-2. apps/backend build → API serverless functions
+2. apps/backend build → API serverless functions  
 3. apps/frontend build → React production build
 ```
 
@@ -66,35 +70,33 @@ Vercel otomatik olarak aşağıdaki ayarları kullanacak:
 
 ### Build Hataları
 
-#### 1. Database Connection Error
+#### 1. Frontend Build Edilmiyor
+```bash
+# Çözüm: Turbo.json'da frontend filter'ı kontrol edin
+turbo build --filter=frontend --filter=backend
+```
+
+#### 2. API Routes 404
 ```bash
 # Çözüm: Environment variables'ı kontrol edin
-DATABASE_URL=postgresql://user:pass@host:5432/db
+VITE_API_BASE_URL=/api
 ```
 
-#### 2. API Keys Missing
+#### 3. Static Files Yüklenmiyor
 ```bash
-# Çözüm: Tüm API keys'leri Vercel dashboard'da ayarlayın
-ANTHROPIC_API_KEY=sk-ant-...
-OPENAI_API_KEY=sk-...
-DEEPGRAM_API_KEY=...
-```
-
-#### 3. Build Timeout
-```bash
-# Çözüm: Build command'i optimize edin
-npm run build:vercel
+# Çözüm: Vercel.json'da routing kontrolü yapın
+"src": "/.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$"
 ```
 
 ### Runtime Hataları
 
-#### 1. API Routes 404
-- Vercel.json'da routing kontrolü yapın
-- `api/index.js` dosyasının doğru export ettiğini kontrol edin
+#### 1. API Calls Fail
+- `VITE_API_BASE_URL` değerinin `/api` olduğunu kontrol edin
+- Browser console'da network tab'ını kontrol edin
 
-#### 2. Environment Variables Not Found
-- Vercel dashboard'da tüm variables'ların ayarlandığını kontrol edin
-- Redeploy yapın
+#### 2. CORS Errors
+- Vercel.json'da CORS headers'ları ayarlandığını kontrol edin
+- API response'larında Access-Control headers'ları olduğunu kontrol edin
 
 ## 📱 Production URL'leri
 
@@ -102,6 +104,17 @@ Deploy tamamlandıktan sonra:
 - **Frontend**: `https://your-project-name.vercel.app`
 - **API**: `https://your-project-name.vercel.app/api/health`
 - **Dashboard**: `https://your-project-name.vercel.app/dashboard`
+
+## 🎯 Test Checklist
+
+Deploy sonrası test edin:
+- [ ] Ana sayfa yükleniyor
+- [ ] API health check çalışıyor: `/api/health`
+- [ ] Dashboard sayfası açılıyor
+- [ ] Hasta listesi yükleniyor
+- [ ] Yeni hasta ekleme çalışıyor
+- [ ] Ses kaydı fonksiyonu çalışıyor
+- [ ] AI not oluşturma çalışıyor
 
 ## 🔄 Güncelleme Süreci
 
@@ -125,12 +138,14 @@ git push origin main
 - ✅ Bundle optimization
 - ✅ Console.log'lar production'da kaldırılıyor
 - ✅ Terser minification
+- ✅ Static asset optimization
 
 ### Backend:
 - ✅ Serverless functions
 - ✅ Cold start optimization
 - ✅ Error handling
 - ✅ Graceful fallbacks
+- ✅ 30 saniye timeout
 
 ## 🔒 Güvenlik
 
@@ -143,7 +158,7 @@ git push origin main
 - ✅ CORS koruması
 - ✅ Request validation
 - ✅ Error handling
-- ✅ Rate limiting (gerektiğinde)
+- ✅ Secure headers
 
 ## 📞 Destek
 
@@ -151,27 +166,37 @@ Deployment sorunları için:
 1. Vercel build logs'ları kontrol edin
 2. Browser console'da hata mesajlarını inceleyin
 3. API health check'i test edin: `/api/health`
+4. Network tab'ında API calls'ları kontrol edin
 
 ### Yaygın Sorunlar:
 
 | Sorun | Çözüm |
 |-------|--------|
-| Build timeout | Build command'i optimize et |
-| API 404 | Routing konfigürasyonunu kontrol et |
-| Environment variables missing | Vercel dashboard'da ayarla |
-| Database connection failed | DATABASE_URL'i kontrol et |
+| Build timeout | Turbo build command'i kontrol et |
+| API 404 | VITE_API_BASE_URL="/api" ayarla |
+| Static files 404 | Vercel.json routing kontrol et |
+| CORS error | Headers konfigürasyonu kontrol et |
 
 ## ✅ Deployment Checklist
 
 - [ ] GitHub repository güncel
 - [ ] Environment variables ayarlandı
+- [ ] VITE_API_BASE_URL="/api" ayarlandı
 - [ ] Database erişilebilir
 - [ ] API keys geçerli
-- [ ] Build başarılı
+- [ ] Build başarılı (hem frontend hem backend)
 - [ ] API health check çalışıyor
 - [ ] Frontend yükleniyor
+- [ ] API calls çalışıyor
 - [ ] Tüm özellikler test edildi
 
 ---
 
-**🎉 Deployment başarılı! TıpScribe artık production'da çalışıyor.** 
+**🎉 Deployment başarılı! TıpScribe artık production'da çalışıyor.**
+
+### 🔧 Son Düzeltmeler:
+1. Frontend ve backend build süreci düzeltildi
+2. API routing serverless functions için optimize edildi
+3. Static files doğru serve ediliyor
+4. CORS headers eklendi
+5. Environment variables production için hazırlandı 

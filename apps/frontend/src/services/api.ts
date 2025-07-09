@@ -5,7 +5,7 @@
 
 import { Patient, Visit, MedicalNote, MedicalTemplate, Doctor } from '@repo/db';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {

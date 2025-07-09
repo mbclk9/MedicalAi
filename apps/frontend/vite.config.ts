@@ -24,9 +24,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: process.env.NODE_ENV === 'production' 
-          ? 'https://your-vercel-domain.vercel.app' 
-          : 'http://localhost:5000',
+        target: 'http://localhost:5000',
         changeOrigin: true
       }
     }
@@ -58,6 +56,7 @@ export default defineConfig({
     include: ['react', 'react-dom', '@tanstack/react-query']
   },
   define: {
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    'process.env.VITE_API_BASE_URL': JSON.stringify(process.env.VITE_API_BASE_URL || '/api')
   }
 })
