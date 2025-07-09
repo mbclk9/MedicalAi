@@ -1,0 +1,8 @@
+
+> backend@1.0.0 build
+> esbuild src/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+
+
+  dist\index.js  55.7kb
+
+Done in 167ms

@@ -13,6 +13,8 @@ Bu rehber, TıpScribe AI Tıbbi Asistan uygulamasını Vercel'de nasıl deploy e
 4. **Static Files**: Frontend assets doğru serve ediliyor
 5. **Environment Variables**: Production için optimize edildi
 6. **CORS**: API istekleri için doğru header'lar eklendi
+7. **TypeScript Config**: Frontend build sorunları düzeltildi
+8. **Turbo Build**: Hem frontend hem backend build ediliyor
 
 ## 🚀 Deployment Adımları
 
@@ -20,7 +22,7 @@ Bu rehber, TıpScribe AI Tıbbi Asistan uygulamasını Vercel'de nasıl deploy e
 ```bash
 # Değişiklikleri commit edin
 git add .
-git commit -m "Fix: Vercel deployment configuration - all issues resolved"
+git commit -m "Fix: Vercel deployment configuration - build process fixed"
 git push origin main
 ```
 
@@ -72,17 +74,23 @@ Vercel otomatik olarak aşağıdaki ayarları kullanacak:
 
 #### 1. Frontend Build Edilmiyor
 ```bash
-# Çözüm: Turbo.json'da frontend filter'ı kontrol edin
+# Çözüm: Turbo.json'da build task'ı kontrol edin
 turbo build --filter=frontend --filter=backend
 ```
 
-#### 2. API Routes 404
+#### 2. TypeScript Build Hataları
+```bash
+# Çözüm: Frontend tsconfig.json'da noEmit: false ayarlandı
+# Vite build kullanılıyor, tsc build kaldırıldı
+```
+
+#### 3. API Routes 404
 ```bash
 # Çözüm: Environment variables'ı kontrol edin
 VITE_API_BASE_URL=/api
 ```
 
-#### 3. Static Files Yüklenmiyor
+#### 4. Static Files Yüklenmiyor
 ```bash
 # Çözüm: Vercel.json'da routing kontrolü yapın
 "src": "/.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$"
@@ -176,6 +184,7 @@ Deployment sorunları için:
 | API 404 | VITE_API_BASE_URL="/api" ayarla |
 | Static files 404 | Vercel.json routing kontrol et |
 | CORS error | Headers konfigürasyonu kontrol et |
+| Frontend build fail | TypeScript config kontrol et |
 
 ## ✅ Deployment Checklist
 
@@ -196,7 +205,7 @@ Deployment sorunları için:
 
 ### 🔧 Son Düzeltmeler:
 1. Frontend ve backend build süreci düzeltildi
-2. API routing serverless functions için optimize edildi
-3. Static files doğru serve ediliyor
-4. CORS headers eklendi
-5. Environment variables production için hazırlandı 
+2. TypeScript build sorunları çözüldü
+3. Turbo build command'i optimize edildi
+4. API routing serverless functions için optimize edildi
+5. Static files doğru serve ediliyor 
