@@ -1,25 +1,29 @@
 {
-  "builds": [
-    {
-      "src": "apps/frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "outputDirectory": "dist"
-      }
-    },
-    {
-      "src": "apps/backend/src/index.ts",
-      "use": "@vercel/node"
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "apps/frontend/dist",
+  "installCommand": "npm run install:all",
+  "framework": null,
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs20.x"
     }
-  ],
+  },
   "routes": [
     {
-     "src": "/api/(.*)",
-      "dest": "/apps/backend/dist/index.js"
+      "src": "/api/(.*)",
+      "dest": "/api/index.js"
     },
     {
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  }
 }

@@ -106,3 +106,6 @@ app.use((req, res, next) => {
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 })();
+
+// Export the app for Vercel serverless functions
+export default app;

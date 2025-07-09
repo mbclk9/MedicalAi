@@ -24,14 +24,16 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: process.env.NODE_ENV === 'production' 
+          ? 'https://your-vercel-domain.vercel.app' 
+          : 'http://localhost:5000',
         changeOrigin: true
       }
     }
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // Disable for production
     rollupOptions: {
       output: {
         manualChunks: {
@@ -42,9 +44,20 @@ export default defineConfig({
           icons: ['lucide-react']
         }
       }
+    },
+    target: 'es2015', // Better browser compatibility
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.log in production
+        drop_debugger: true
+      }
     }
   },
   optimizeDeps: {
     include: ['react', 'react-dom', '@tanstack/react-query']
+  },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
   }
 })
