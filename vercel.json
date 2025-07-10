@@ -1,22 +1,38 @@
 {
-  "installCommand": "npm install -g npm@latest && npm config set fund false && npm install --workspace=./", 
-  "outputDirectory": "dist", 
+  "installCommand": "npm install -g npm@latest && npm config set fund false && npm install --workspace=./",
+  "outputDirectory": "dist",
 
-  "routes": [
+  "rewrites": [
     {
       "src": "/api/(.*)",
-      "dest": "/apps/backend/dist/index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
+      "dest": "/apps/backend/dist/index.js"
     },
     {
       "src": "/(.*)",
       "dest": "/index.html"
     }
   ],
+
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ],
+
   "env": {
     "NODE_ENV": "production"
   },
@@ -25,10 +41,6 @@
       "NODE_ENV": "production"
     }
   },
-  "crons": [
-  
-  ],
-  "rewrites": [
-    
-  ]
+  "crons": [],
+  "redirects": []
 }
