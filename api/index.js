@@ -15,8 +15,9 @@ async function handler(req, res) {
       return;
     }
 
-    // Dynamic import backend app (ESM uyumluluğu için)
-    const { default: app } = await import('../apps/backend/dist/index.js');
+    // Backend app'i import et
+    const backendPath = path.join(__dirname, '../apps/backend/dist/index.js');
+    const { default: app } = await import(backendPath);
     
     // Express app'i serverless function olarak çalıştır
     return app(req, res);

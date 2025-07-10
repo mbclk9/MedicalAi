@@ -1,4 +1,5 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
+import { sql } from 'drizzle-orm';
 import { Client } from 'pg';
 import * as schema from './schema';
 
@@ -40,4 +41,6 @@ export const {
   insertMedicalNoteSchema,
   insertRecordingSchema,
   insertTemplateSchema
-} = schema; 
+} = schema;
+
+export { sql }; 

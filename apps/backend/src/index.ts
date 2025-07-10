@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import cors from "cors";
 import { client, db } from "@repo/db";
+import { sql } from "drizzle-orm";
 
 // Veritabanı bağlantısını test etmek için bir fonksiyon
 async function testDbConnection() {
@@ -10,30 +11,32 @@ async function testDbConnection() {
     await client.connect();
     console.log("✅ Veritabanı istemcisi başarıyla bağlandı.");
     // Basit bir sorgu çalıştırarak bağlantıyı doğrula
-    await db.execute('SELECT 1');
+    const result = await db.execute(sql`SELECT 1`);
     console.log("✅ Veritabanı test sorgusu başarılı.");
   } catch (err) {
     console.error("❌ Veritabanı bağlantısı başarısız:", err);
-    // Vercel'de process.exit kullanmayalım
-    if (process.env.NODE_ENV !== 'production') {
-      process.exit(1);
-    }
+    // Vercel'de process.exit kullanmayalım, sadece log yapalım
+    console.error("Veritabanı bağlantısı başarısız olmasına rağmen uygulama devam ediyor...");
   }
 }
 
 // Bağlantıyı düzgün bir şekilde kapatmak için fonksiyon
 async function closeDbConnection() {
-    console.log("🔌 Veritabanı bağlantısı kapatılıyor...");
-    await client.end();
-    console.log("✅ Veritabanı bağlantısı kapatıldı.");
+    try {
+        console.log("🔌 Veritabanı bağlantısı kapatılıyor...");
+        await client.end();
+        console.log("✅ Veritabanı bağlantısı kapatıldı.");
+    } catch (error) {
+        console.error("❌ Veritabanı bağlantısı kapatılırken hata:", error);
+    }
 }
 
 const app = express();
 
-// CORS middleware
+// CORS middleware - Vercel için daha esnek
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ["https://your-vercel-domain.vercel.app"] 
+    ? ["https://*.vercel.app", "https://*.vercel.app/*"] 
     : ["http://localhost:3000", "http://localhost:3001"],
   credentials: true
 }));
@@ -75,6 +78,7 @@ app.use((req, res, next) => {
 // Initialize app for Vercel
 async function initializeApp() {
   try {
+    // Database bağlantısını test et ama hata durumunda devam et
     await testDbConnection();
     await registerRoutes(app);
     
