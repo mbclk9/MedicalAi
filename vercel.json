@@ -1,4 +1,7 @@
 {
+  "installCommand": "npm install -g npm@latest && npm config set fund false && npm install --workspace=./", 
+  "outputDirectory": "dist", 
+
   "routes": [
     {
       "src": "/api/(.*)",
@@ -14,9 +17,6 @@
       "dest": "/index.html"
     }
   ],
-
-
-
   "env": {
     "NODE_ENV": "production"
   },
@@ -24,5 +24,11 @@
     "env": {
       "NODE_ENV": "production"
     }
-  }
+  },
+  "crons": [
+  
+  ],
+  "rewrites": [
+    
+  ]
 }
