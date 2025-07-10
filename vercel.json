@@ -1,7 +1,8 @@
 {
   "version": 2,
   "buildCommand": "npm run build:vercel",
-  "installCommand": "npm install",
+  "installCommand": "npm install --legacy-peer-deps",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD",
   
   "builds": [
     {
