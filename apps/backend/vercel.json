@@ -1,0 +1,9 @@
+{
+    "version": 2,
+    "buildCommand": "turbo run build --filter=backend...",
+    "installCommand": "cd ../.. && npm install --legacy-peer-deps",
+    "outputDirectory": "dist",
+    "env": {
+      "NODE_ENV": "production"
+    }
+  }
