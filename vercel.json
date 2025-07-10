@@ -1,34 +1,12 @@
 {
-  "version": 2,
-  "buildCommand": "npm run build:vercel",
-  "installCommand": "npm install",
+  "buildCommand": "cd apps/frontend && npm install && npm run build",
+  "outputDirectory": "apps/frontend/dist",
+  "framework": "vite",
   
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/index.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "apps/frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
-  ],
-
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/apps/frontend/dist/$1"
-    }
-  ],
-
-  "env": {
-    "NODE_ENV": "production"
-  }
+  ]
 }
