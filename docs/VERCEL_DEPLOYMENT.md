@@ -4,6 +4,16 @@
 
 Bu rehber, TıpScribe AI Tıbbi Asistan uygulamasını Vercel'de nasıl deploy edeceğinizi adım adım açıklar.
 
+## 🆕 Güncel Vercel Konfigürasyonu (2025-07-10)
+
+**Önemli Güncellemeler:**
+- ✅ Monorepo yapısı için Vercel konfigürasyonu optimize edildi
+- ✅ Backend serverless function olarak çalışacak şekilde düzenlendi
+- ✅ Database bağlantısı production SSL ayarları düzeltildi
+- ✅ Route yapısı `/api/*` → `apps/backend/src/index.ts` olarak ayarlandı
+- ✅ Frontend build output'u düzeltildi
+- ✅ Storage ve service import path'leri güncellendi
+
 ## 🔧 Düzeltilen Sorunlar
 
 ### ✅ Yapılan Düzeltmeler:

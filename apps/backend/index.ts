@@ -241,26 +241,9 @@ app.get("/api/templates", async (req: Request, res: Response) => {
   }
 });
 
-// Patient endpoints
-app.get("/api/patients", async (req: Request, res: Response) => {
-  try {
-    const patients = await storage.getPatients();
-    res.json(patients);
-  } catch (error: any) {
-    console.error("❌ Patients endpoint error:", error);
-    res.status(500).json({ error: "Failed to fetch patients" });
-  }
-});
-
-app.post("/api/patients", async (req: Request, res: Response) => {
-  try {
-    const patient = await storage.createPatient(req.body);
-    res.json(patient);
-  } catch (error: any) {
-    console.error("❌ Create patient error:", error);
-    res.status(500).json({ error: "Failed to create patient" });
-  }
-});
+// Patient endpoints - Import detailed routes
+import patientRoutes from './routes/patients';
+app.use('/api/patients', patientRoutes);
 
 // Transcription endpoint
 app.post("/api/transcribe", upload.single('audio'), async (req: Request, res: Response) => {

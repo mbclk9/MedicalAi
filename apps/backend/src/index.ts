@@ -130,9 +130,17 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Initialize app for Vercel
-if (process.env.NODE_ENV === 'production') {
-  initializeApp();
+let initializedApp: any = null;
+
+async function getApp() {
+  if (!initializedApp) {
+    initializedApp = await initializeApp();
+  }
+  return initializedApp;
 }
 
 // Export the app for Vercel serverless functions
-export default app;
+export default async function handler(req: any, res: any) {
+  const app = await getApp();
+  return app(req, res);
+};

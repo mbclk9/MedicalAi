@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "../storage";
+import { DatabaseStorage } from "../src/database/databaseStorage";
+
+const storage = new DatabaseStorage();
 import { deepgramService } from "./services/deepgramService";
 import { anthropicService } from "./services/anthropicService";
 import multer from "multer";
