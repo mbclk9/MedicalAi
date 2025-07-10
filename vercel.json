@@ -2,7 +2,6 @@
   "version": 2,
   "buildCommand": "npm run build:vercel",
   "installCommand": "npm run install:all",
-  "outputDirectory": "apps/frontend/dist",
   
   "builds": [
     {
@@ -28,13 +27,6 @@
       "dest": "/apps/frontend/dist/$1"
     }
   ],
-
-  "functions": {
-    "api/index.js": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 30
-    }
-  },
 
   "env": {
     "NODE_ENV": "production"
