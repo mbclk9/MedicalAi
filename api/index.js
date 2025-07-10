@@ -1,23 +1,36 @@
-// Vercel serverless function entry point for TıpScribe API
+// api/index.js - Vercel Serverless Function Entry Point
+
 const path = require('path');
 
-try {
-  // Import the built backend application
-  const app = require('../apps/backend/dist/index.js');
-  
-  // Export the Express app for Vercel serverless functions
-  module.exports = app.default || app;
-  
-  console.log('✅ TıpScribe API loaded successfully for Vercel');
-} catch (error) {
-  console.error('❌ Failed to load TıpScribe API:', error);
-  
-  // Fallback handler for errors
-  module.exports = (req, res) => {
+async function handler(req, res) {
+  try {
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    // Handle preflight OPTIONS request
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
+
+    // Dynamic import backend app (ESM uyumluluğu için)
+    const { default: app } = await import('../apps/backend/dist/index.js');
+    
+    // Express app'i serverless function olarak çalıştır
+    return app(req, res);
+    
+  } catch (error) {
+    console.error('❌ API Error:', error);
+    
     res.status(500).json({
       error: 'API initialization failed',
       message: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      path: req.url
     });
-  };
-} 
+  }
+}
+
+module.exports = handler;

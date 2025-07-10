@@ -2,22 +2,25 @@
   "name": "@repo/db",
   "version": "1.0.0",
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "module": "./dist/index.mjs", 
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "npx tsup index.ts --format cjs,esm --dts",
-    "dev": "npx tsup index.ts --format cjs,esm --dts --watch"
+    "dev": "npx tsup index.ts --format cjs,esm --dts --watch",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio", 
+    "db:generate": "drizzle-kit generate"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.20.x",
     "tsup": "^8.x.x",
     "typescript": "^5.x.x",
     "@types/node": "^20.x.x"
-
   },
   "dependencies": {
     "drizzle-orm": "^0.30.x",
-    "pg": "^8.x.x",
-    "drizzle-zod": "^0.5.1" 
+    "pg": "^8.x.x", 
+    "drizzle-zod": "^0.5.1"
   },
   "exports": {
     ".": {
