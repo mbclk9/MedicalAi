@@ -103,3 +103,161 @@
     50% { transform: scaleY(0.3); }
   }
 }
+
+@layer components {
+  /* Z-index hierarchy for proper stacking */
+  
+  /* Modal/Dialog components (highest priority) */
+  [data-radix-dialog-overlay] {
+    z-index: 9998 !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(2px) !important;
+  }
+  
+  [data-radix-dialog-content] {
+    z-index: 9999 !important;
+  }
+  
+  /* Dropdown/Select components (high priority) */
+  [data-radix-popper-content-wrapper] {
+    z-index: 8999 !important;
+  }
+  
+  [data-radix-select-content] {
+    z-index: 8999 !important;
+    background: white !important;
+    border: 1px solid hsl(20, 5.9%, 90%) !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    max-height: 400px !important;
+    overflow-y: auto !important;
+  }
+  
+  [data-radix-select-trigger] {
+    transition: all 0.2s ease-in-out;
+    position: relative !important;
+    z-index: 1 !important;
+  }
+  
+  [data-radix-select-trigger]:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 2px hsl(207, 90%, 54%) !important;
+  }
+  
+  [data-radix-select-trigger][data-state="open"] {
+    border-color: hsl(207, 90%, 54%) !important;
+    box-shadow: 0 0 0 2px hsl(207, 90%, 54%) !important;
+  }
+  
+  [data-radix-select-item] {
+    cursor: pointer !important;
+    padding: 0.5rem 2rem 0.5rem 2rem !important;
+    transition: background-color 0.15s ease-in-out !important;
+    border-radius: 0.25rem !important;
+    margin: 0.125rem !important;
+  }
+  
+  [data-radix-select-item]:hover {
+    background-color: hsl(207, 90%, 97%) !important;
+  }
+  
+  [data-radix-select-item][data-state="checked"] {
+    background-color: hsl(207, 90%, 54%) !important;
+    color: white !important;
+  }
+  
+  [data-radix-select-item][data-state="checked"]:hover {
+    background-color: hsl(207, 90%, 64%) !important;
+  }
+  
+  [data-radix-select-item][data-highlighted] {
+    background-color: hsl(207, 90%, 97%) !important;
+    outline: none !important;
+  }
+  
+  [data-radix-select-item][data-highlighted][data-state="checked"] {
+    background-color: hsl(207, 90%, 64%) !important;
+    color: white !important;
+  }
+  
+  /* Ensure dropdown closes properly */
+  [data-radix-select-viewport] {
+    padding: 0.25rem !important;
+  }
+  
+  /* Fix for z-index issues */
+  [data-radix-portal] {
+    z-index: 8999 !important;
+  }
+  
+  /* Additional fixes for select styling */
+  .select-trigger-icon {
+    transition: transform 0.2s ease-in-out !important;
+  }
+  
+  [data-radix-select-trigger][data-state="open"] .select-trigger-icon {
+    transform: rotate(180deg) !important;
+  }
+  
+  /* When modal is open, lower dropdown z-index */
+  [data-state="open"][data-radix-dialog-overlay] ~ * [data-radix-select-content] {
+    z-index: 1 !important;
+  }
+  
+  /* Toast notifications */
+  [data-radix-toast-viewport] {
+    z-index: 10000 !important;
+  }
+  
+  /* Tooltip */
+  [data-radix-tooltip-content] {
+    z-index: 9000 !important;
+  }
+  
+  /* Popover */
+  [data-radix-popover-content] {
+    z-index: 8000 !important;
+  }
+  
+  /* Fix for mobile responsiveness */
+  @media (max-width: 768px) {
+    [data-radix-select-content] {
+      max-height: 300px !important;
+    }
+    
+    [data-radix-dialog-content] {
+      width: 95vw !important;
+      max-width: 95vw !important;
+      margin: 1rem !important;
+    }
+  }
+  
+  /* Prevent body scroll when modal is open */
+  .modal-open {
+    overflow: hidden !important;
+  }
+  
+  /* Better focus management */
+  [data-radix-dialog-content]:focus {
+    outline: none !important;
+  }
+  
+  /* Smooth transitions */
+  [data-radix-dialog-overlay][data-state="open"] {
+    animation: fadeIn 0.2s ease-out !important;
+  }
+  
+  [data-radix-dialog-overlay][data-state="closed"] {
+    animation: fadeOut 0.2s ease-in !important;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+}

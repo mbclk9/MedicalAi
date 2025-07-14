@@ -3,20 +3,25 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { 
-  Download, 
   Mic, 
-  Clock, 
+  UserPlus, 
+  FileText, 
   CheckCircle, 
   AlertCircle,
-  User,
+  Clock,
+  Activity,
+  Shield,
+  Lightbulb,
+  Eye,
   Trash2
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import type { Visit } from "@/types/medical";
+import { motion } from "framer-motion";
+import { AnimatedPage, staggerContainer, staggerItem, hoverScale, hoverTap } from "@/components/AnimatedPage";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -54,12 +59,29 @@ export default function Dashboard() {
   const handleDeleteVisit = (visitId: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (confirm("Bu muayene kaydını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) {
+    if (confirm("Bu muayene kaydını silmek istediğinize emin misiniz?")) {
       deleteVisitMutation.mutate(visitId);
     }
   };
 
+  const formatDate = (date: Date | string | undefined) => {
+    if (!date) return '-';
+    const d = new Date(date);
+    return d.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
 
+  const formatTime = (date: Date | string | undefined) => {
+    if (!date) return '-';
+    const d = new Date(date);
+    return d.toLocaleTimeString('tr-TR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -87,233 +109,261 @@ export default function Dashboard() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return CheckCircle;
-      case "in_progress":
-        return Clock;
-      case "cancelled":
-        return AlertCircle;
-      default:
-        return Clock;
-    }
-  };
-
-  const formatDate = (date: Date | string | undefined) => {
-    if (!date) return '';
-    const d = new Date(date);
-    return d.toLocaleDateString('tr-TR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatDuration = (duration?: number) => {
-    if (!duration) return '';
-    const minutes = Math.floor(duration / 60);
-    const seconds = duration % 60;
-    return `${minutes} dakika`;
-  };
-
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen bg-gray-50">
       <Sidebar />
       
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold text-gray-900">Hasta Notları</h2>
-              <p className="text-sm text-gray-600">
-                Son güncelleme: Bugün, {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-              </p>
+      <main className="flex-1 overflow-hidden">
+        <AnimatedPage>
+          {/* Header */}
+          <motion.header 
+            className="bg-white border-b border-gray-200 px-6 py-4"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+                <p className="text-sm text-gray-600">Sık kullanılan işlemleri hızlıca gerçekleştirin</p>
+              </div>
+              <div className="text-sm text-gray-500">
+                Son güncelleme: {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                Dışa Aktar
-              </Button>
-              <Link href="/visit/new">
-                <Button className="medical-gradient text-white">
-                  <Mic className="mr-2 h-4 w-4" />
-                  Kayıt Başlat
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </header>
+          </motion.header>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-hidden">
-          <div className="flex h-full">
-            {/* Recent Visits List */}
-            <div className="w-96 bg-white border-r border-gray-200 overflow-y-auto">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Son Muayeneler</h3>
-                
-                {isLoading ? (
-                  <div className="space-y-3">
-                    {Array.from({ length: 3 }).map((_, index) => (
-                      <div key={index} className="p-4 border border-gray-200 rounded-lg animate-pulse">
-                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                        <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
-                        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+        <div className="flex-1 overflow-auto">
+          <div className="p-6 space-y-6">
+            {/* Hızlı Eylemler */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+            >
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Hızlı Eylemler</h2>
+              <motion.div 
+                className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                variants={staggerContainer}
+                initial="initial"
+                animate="in"
+              >
+                <motion.div variants={staggerItem}>
+                  <Link href="/visit/new">
+                    <motion.div
+                      whileHover={hoverScale}
+                      whileTap={hoverTap}
+                    >
+                      <Card className="cursor-pointer hover:shadow-lg transition-shadow bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                        <CardContent className="p-6">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                              <Mic className="h-6 w-6" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">Yeni Kayıt Başlat</h3>
+                              <p className="text-sm text-white/80">Hasta görüşmesi kaydet</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </Link>
+                </motion.div>
+
+                <motion.div variants={staggerItem}>
+                  <Link href="/patients/add">
+                    <motion.div
+                      whileHover={hoverScale}
+                      whileTap={hoverTap}
+                    >
+                      <Card className="cursor-pointer hover:shadow-lg transition-shadow bg-gradient-to-r from-green-500 to-teal-600 text-white">
+                        <CardContent className="p-6">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                              <UserPlus className="h-6 w-6" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">Hasta Ekle</h3>
+                              <p className="text-sm text-white/80">Yeni hasta kayıt oluştur</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </Link>
+                </motion.div>
+
+                <motion.div variants={staggerItem}>
+                  <Link href="/templates">
+                    <motion.div
+                      whileHover={hoverScale}
+                      whileTap={hoverTap}
+                    >
+                      <Card className="cursor-pointer hover:shadow-lg transition-shadow bg-gradient-to-r from-orange-500 to-red-600 text-white">
+                        <CardContent className="p-6">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                              <FileText className="h-6 w-6" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">Not Oluştur</h3>
+                              <p className="text-sm text-white/80">Manuel tıbbi not yaz</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </Link>
+                </motion.div>
+              </motion.div>
+            </motion.div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Son Ziyaretler */}
+              <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>Son Ziyaretler</span>
+                      <span className="text-sm text-gray-500">Yenile</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
+                      <div className="space-y-3">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                          <div key={i} className="animate-pulse">
+                            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : recentVisits.length === 0 ? (
-                  <div className="text-center py-8">
-                    <User className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <p className="text-gray-600">Henüz muayene kaydı yok</p>
-                    <Link href="/visit/new">
-                      <Button className="mt-4 medical-gradient text-white">
-                        İlk Muayeneni Başlat
-                      </Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {recentVisits.map((visit, index) => {
-                      const StatusIcon = getStatusIcon(visit.status);
-                      return (
-                        <Link key={visit.id} href={`/visit/${visit.id}`}>
-                          <Card className={`cursor-pointer hover:bg-gray-50 transition-colors ${
-                            index === 0 ? "border-l-4 border-l-primary bg-blue-50" : ""
-                          }`}>
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <h4 className="font-medium text-gray-900">
-                                    {visit.patient?.name} {visit.patient?.surname}
-                                  </h4>
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    {formatDate(visit.visitDate)} ({formatDuration(visit.duration)})
-                                  </p>
-                                  <p className="text-sm text-gray-500 mt-1">
-                                    {visit.visitType === 'ilk' ? 'İlk muayene' : 
-                                     visit.visitType === 'kontrol' ? 'Kontrol muayenesi' : 
-                                     'Konsültasyon'}
-                                  </p>
+                    ) : recentVisits.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <FileText className="mx-auto h-12 w-12 mb-4 text-gray-300" />
+                        <p>Henüz muayene kaydı bulunmuyor</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {recentVisits.slice(0, 5).map((visit, index) => (
+                          <Link key={visit.id} href={`/visit/${visit.id}`}>
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span className="text-blue-600 font-medium">
+                                      {visit.patient?.name?.charAt(0)}{visit.patient?.surname?.charAt(0)}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-gray-900">
+                                      {visit.patient?.name} {visit.patient?.surname}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      Kardiyoloji Konsültasyonu
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="flex items-center space-x-2">
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-gray-900">{formatDate(visit.visitDate)}</p>
+                                <p className="text-sm text-gray-500">{formatTime(visit.visitDate)}</p>
+                              </div>
+                              <div className="flex items-center space-x-2 ml-4">
+                                <Badge className={getStatusColor(visit.status)}>
+                                  {getStatusText(visit.status)}
+                                </Badge>
+                                <div className="flex space-x-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={(e) => handleDeleteVisit(visit.id, e)}
-                                    disabled={deleteVisitMutation.isPending}
-                                    className="text-red-600 hover:text-red-800 hover:bg-red-50"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
-                                  <Badge className={getStatusColor(visit.status)}>
-                                    <StatusIcon className="mr-1 h-3 w-3" />
-                                    {getStatusText(visit.status)}
-                                  </Badge>
                                 </div>
                               </div>
-                            </CardContent>
-                          </Card>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
-            </div>
 
-            {/* Main Content Area */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-8">
-                <div className="text-center py-12">
-                  <div className="max-w-md mx-auto">
-                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Mic className="h-12 w-12 text-primary" />
+              {/* Sistem Durumu */}
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Sistem Durumu</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-sm">KVKK Uyumluluğu</span>
+                      </div>
+                      <Badge variant="outline" className="text-green-600">Aktif</Badge>
                     </div>
-                    <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-                      AI Tıbbi Sekreter'e Hoş Geldiniz
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      Hasta muayenelerinizi kayıt altına alın ve AI ile otomatik olarak 
-                      profesyonel tıbbi notlar oluşturun.
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <span className="text-sm">Transkripsiyon</span>
+                      </div>
+                      <Badge variant="outline" className="text-blue-600">% 98 Doğruluk</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                        <span className="text-sm">Tıbbi Not Oluşturma</span>
+                      </div>
+                      <Badge variant="outline" className="text-purple-600">Hazır</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Lightbulb className="h-5 w-5" />
+                      <span>Kullanıcı İpuçları</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <div className="space-y-3">
-                      <Link href="/visit/new">
-                        <Button
-                          size="lg"
-                          className="w-full medical-gradient text-white"
-                        >
-                          <Mic className="mr-2 h-5 w-5" />
-                          Yeni Muayene Başlat
-                        </Button>
-                      </Link>
-                      <p className="text-sm text-gray-500">
-                        Muayene şablonunu seçin ve ses kaydına başlayın
-                      </p>
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm font-medium text-blue-900">Kaliteli Kayıt</p>
+                        <p className="text-sm text-blue-700">Sessiz ortamda, mikrofonumuzu yakın tutun</p>
+                      </div>
+                      <div className="p-3 bg-green-50 rounded-lg">
+                        <p className="text-sm font-medium text-green-900">Not Konsultasyonu</p>
+                        <p className="text-sm text-green-700">Yanıt ile endilgili bilgiler daha açık konuşun</p>
+                      </div>
+                      <div className="p-3 bg-purple-50 rounded-lg">
+                        <p className="text-sm font-medium text-purple-900">Otomatik İşlem</p>
+                        <p className="text-sm text-purple-700">AI sistemi otomatik olarak SOAP nostu çıkaracak</p>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                <Separator className="my-8" />
-
-                {/* Feature Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center text-lg">
-                        <Mic className="mr-2 h-5 w-5 text-primary" />
-                        Türkçe Ses Tanıma
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-600">
-                        Deepgram AI ile yüksek kaliteli Türkçe ses tanıma ve 
-                        gerçek zamanlı transkripsiyon.
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center text-lg">
-                        <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-                        AI Destekli Notlar
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-600">
-                        GPT-4 ile Türk sağlık sistemine uygun SOAP formatında 
-                        profesyonel tıbbi notlar.
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center text-lg">
-                        <Download className="mr-2 h-5 w-5 text-blue-600" />
-                        Şablon Sistemi
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-600">
-                        Kardiyoloji, İç Hastalıkları, Pediatri gibi branşlara 
-                        özel muayene şablonları.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
         </div>
+        </AnimatedPage>
       </main>
-
-
     </div>
   );
 }

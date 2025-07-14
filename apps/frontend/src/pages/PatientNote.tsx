@@ -4,12 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "@/components/Sidebar";
 import { RecordingControls } from "@/components/RecordingControls";
 import { MedicalNoteEditor } from "@/components/MedicalNoteEditor";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, User, Calendar, Clock, AlertCircle, CheckCircle, Mic2, Brain, Stethoscope } from "lucide-react";
 import { Link } from "wouter";
 import type { Visit, Patient, MedicalNote, Recording, MedicalTemplate } from "@/types/medical";
+import { motion } from "framer-motion";
+import { AnimatedPage, slideVariants } from "@/components/AnimatedPage";
 
 interface VisitDetails {
   visit: Visit;
@@ -61,54 +64,52 @@ export default function PatientNote() {
   const getVisitTypeColor = (type: string) => {
     switch (type) {
       case 'ilk':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'kontrol':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'konsultasyon':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 text-purple-800 border-purple-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
+  // Loading state
   if (isLoading) {
     return (
-      <div className="flex h-screen overflow-hidden bg-gray-50">
+      <div className="flex h-screen bg-gray-50">
         <Sidebar />
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600">Hasta bilgileri yükleniyor...</p>
+          <div className="text-center space-y-4">
+            <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-gray-900">Hasta Bilgileri Yükleniyor</h3>
+              <p className="text-gray-600">Lütfen bekleyiniz...</p>
+            </div>
           </div>
         </main>
       </div>
     );
   }
 
+  // Error state
   if (error || !visitDetails) {
     return (
-      <div className="flex h-screen overflow-hidden bg-gray-50">
+      <div className="flex h-screen bg-gray-50">
         <Sidebar />
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <User className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Hasta kaydı bulunamadı
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Aradığınız hasta kaydına erişilemiyor.
-            </p>
-            {/* Debug bilgisi */}
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-left max-w-md mx-auto">
-              <p className="text-sm text-red-800">
-                <strong>Debug:</strong><br/>
-                Visit ID: {visitId}<br/>
-                Error: {error?.message || 'No data'}<br/>
-                URL: {window.location.pathname}
+          <div className="text-center space-y-6 max-w-md">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <AlertCircle className="h-10 w-10 text-red-600" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold text-gray-900">Hasta Kaydı Bulunamadı</h3>
+              <p className="text-gray-600">
+                Aradığınız hasta kaydına erişilemiyor. Kayıt silinmiş veya ID hatalı olabilir.
               </p>
             </div>
             <Link href="/">
-              <Button>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Ana Sayfaya Dön
               </Button>
@@ -122,80 +123,127 @@ export default function PatientNote() {
   const { visit, patient, medicalNote, recording } = visitDetails;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen bg-gray-50">
       <Sidebar />
       
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Geri
-                </Button>
-              </Link>
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-900">
-                  {patient.name} {patient.surname}
-                </h2>
-                <div className="flex items-center space-x-2 mt-1">
-                  <Badge className={getVisitTypeColor(visit.visitType)}>
-                    {getVisitTypeText(visit.visitType)}
-                  </Badge>
-                  {selectedTemplate && (
-                    <Badge variant="outline">
-                      {selectedTemplate.name}
-                    </Badge>
-                  )}
-                  <span className="text-sm text-gray-600">
-                    {new Date(visit.visitDate!).toLocaleDateString('tr-TR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col">
+        <AnimatedPage>
+          {/* Header */}
+          <motion.header 
+            className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Link href="/">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Geri
+                    </Button>
+                  </motion.div>
+                </Link>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex items-center space-x-3">
+                  <motion.div 
+                    className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                  >
+                    <User className="h-5 w-5 text-blue-600" />
+                  </motion.div>
+                  <div>
+                    <h1 className="text-xl font-bold text-gray-900">
+                      {patient.name} {patient.surname}
+                    </h1>
+                    <div className="flex items-center space-x-3 mt-1">
+                      <Badge className={getVisitTypeColor(visit.visitType)}>
+                        {getVisitTypeText(visit.visitType)}
+                      </Badge>
+                      {selectedTemplate && (
+                        <Badge variant="outline" className="text-xs">
+                          <Stethoscope className="h-3 w-3 mr-1" />
+                          {selectedTemplate.name}
+                        </Badge>
+                      )}
+                      <span className="text-sm text-gray-500">
+                        {new Date(visit.visitDate!).toLocaleDateString('tr-TR')} - {new Date(visit.visitDate!).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </header>
+          </motion.header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-6">
-          {/* Recording Controls */}
-          <RecordingControls 
-            onTranscriptionReady={handleTranscriptionReady}
-            visitId={visit.id}
-            templateId={visit.templateId || undefined}
-          />
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left Sidebar - Recording & AI */}
+          <aside className="w-96 bg-white border-r border-gray-200 flex flex-col">
+            <div className="p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Ses Kaydı ve AI İşleme</h2>
+              <p className="text-sm text-gray-600 mt-1">Hasta görüşmesini kaydedin ve AI analizi alın</p>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4">
+              <RecordingControls 
+                onTranscriptionReady={handleTranscriptionReady}
+                visitId={visit.id}
+                templateId={visit.templateId || undefined}
+              />
+            </div>
+          </aside>
 
-          {/* Current Transcription Display */}
-          {(transcription || recording?.transcription) && (
-            <Card>
-              <CardContent className="p-6">
-                <h4 className="font-medium text-gray-900 mb-3">Mevcut Transkripsiyon</h4>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-gray-700 whitespace-pre-wrap">
-                    {transcription || recording?.transcription}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Right Content - Medical Note */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-6">
+              {/* Patient Summary */}
+              <Card className="mb-6 border-0 shadow-sm bg-gradient-to-r from-blue-50 to-indigo-50">
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-500">TC Kimlik:</span>
+                      <p className="font-mono text-gray-900">{patient.tcKimlik || 'Belirtilmemiş'}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-500">Telefon:</span>
+                      <p className="text-gray-900">{patient.phone || 'Belirtilmemiş'}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-500">Muayene Durumu:</span>
+                      <div className="flex items-center space-x-1 mt-1">
+                        {medicalNote ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Brain className="h-4 w-4 text-blue-600" />
+                        )}
+                        <span className="text-sm">
+                          {medicalNote ? "Tıbbi not hazır" : "İşleniyor"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Medical Note Editor */}
-          <MedicalNoteEditor
-            visit={visit}
-            patient={patient}
-            medicalNote={medicalNote}
-            template={selectedTemplate || undefined}
-            transcription={transcription || recording?.transcription}
-          />
+              {/* Medical Note Editor */}
+              <MedicalNoteEditor
+                visit={{...visit, patient}}
+                medicalNote={medicalNote}
+                template={selectedTemplate || undefined}
+                transcription={transcription || recording?.transcription}
+              />
+            </div>
+          </div>
         </div>
+        </AnimatedPage>
       </main>
     </div>
   );
