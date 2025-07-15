@@ -131,13 +131,28 @@ export default function AddPatient() {
       return;
     }
 
-    if (formData.phone && !/^[0-9]{10,11}$/.test(formData.phone.replace(/\s/g, ''))) {
-      toast({
-        title: "Geçersiz Telefon",
-        description: "Geçerli bir telefon numarası giriniz.",
-        variant: "destructive",
-      });
-      return;
+    if (formData.phone) {
+      const cleaned = formData.phone.replace(/[^0-9+]/g, '');
+      if (!/^\+?\d{10,15}$/.test(cleaned)) {
+        toast({
+          title: "Geçersiz Telefon",
+          description: "Geçerli bir telefon numarası giriniz (ör: +905321234567 veya 05321234567).",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        toast({
+          title: "Geçersiz E-posta",
+          description: "Geçerli bir e-posta adresi giriniz.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     addPatientMutation.mutate(formData);
@@ -174,7 +189,7 @@ export default function AddPatient() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="bg-white shadow-sm border-b px-6 py-4">
           <div className="flex items-center gap-4">
-            <Link to="/patients">
+            <Link href="/patients">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Hasta Listesi
@@ -190,7 +205,7 @@ export default function AddPatient() {
         </div>
 
         <div className="flex-1 overflow-auto p-6">
-          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-8">
+          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-8 pb-8">
             
             {/* Kimlik Bilgileri */}
             <Card>
@@ -565,16 +580,18 @@ export default function AddPatient() {
 
             {/* Kaydet Butonları */}
             <div className="flex gap-4 pt-6 pb-8">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={addPatientMutation.isPending}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 h-12 font-semibold"
+                variant="default"
+                size="lg"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-12 font-semibold"
               >
                 <Save className="h-4 w-4 mr-2" />
                 {addPatientMutation.isPending ? "Kaydediliyor..." : "Hasta Kaydet"}
               </Button>
-              <Link to="/patients">
-                <Button variant="outline" type="button" className="w-32 h-12">
+              <Link href="/patients">
+                <Button variant="outline" type="button" size="lg" className="w-32 h-12">
                   İptal
                 </Button>
               </Link>

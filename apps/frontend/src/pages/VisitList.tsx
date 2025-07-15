@@ -21,11 +21,14 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import type { Visit } from "@/types/medical";
 import { motion } from "framer-motion";
-import { AnimatedPage, staggerContainer, staggerItem, hoverScale } from "@/components/AnimatedPage";
+import { ConfirmationDialog } from "@/components/ConfirmationDialog";
 
 export default function VisitList() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [deleteVisitId, setDeleteVisitId] = useState<number | null>(null);
+  const [deleteVisitName, setDeleteVisitName] = useState<string>("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { data: visits = [], isLoading } = useQuery<Visit[]>({
     queryKey: ["/api/visits"],
@@ -48,6 +51,9 @@ export default function VisitList() {
         title: "Başarılı",
         description: "Muayene kaydı silindi",
       });
+      setIsDeleteDialogOpen(false);
+      setDeleteVisitId(null);
+      setDeleteVisitName("");
     },
     onError: () => {
       toast({
@@ -55,12 +61,21 @@ export default function VisitList() {
         description: "Muayene silinirken hata oluştu",
         variant: "destructive",
       });
+      setIsDeleteDialogOpen(false);
+      setDeleteVisitId(null);
+      setDeleteVisitName("");
     },
   });
 
   const handleDeleteVisit = (visitId: number, patientName: string) => {
-    if (confirm(`${patientName} hastasının muayene kaydını silmek istediğinize emin misiniz?`)) {
-      deleteVisitMutation.mutate(visitId);
+    setDeleteVisitId(visitId);
+    setDeleteVisitName(patientName);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (deleteVisitId) {
+      deleteVisitMutation.mutate(deleteVisitId);
     }
   };
 
@@ -147,8 +162,13 @@ export default function VisitList() {
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
       
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <AnimatedPage>
+      <motion.main 
+        className="flex-1 flex flex-col overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+      >
           {/* Header */}
           <motion.header 
             className="bg-white border-b border-gray-200 px-6 py-4"
@@ -348,12 +368,21 @@ export default function VisitList() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end space-x-2">
-                            <Link href={`/visit/${visit.id}`}>
-                              <Button size="sm" variant="outline">
-                                <Eye className="h-4 w-4 mr-1" />
-                                Görüntüle
-                              </Button>
-                            </Link>
+                            {visit.status === 'in_progress' ? (
+                              <Link href={`/visit/new?visitId=${visit.id}`}>
+                                <Button size="sm" variant="default" className="bg-yellow-500 hover:bg-yellow-600">
+                                  <Stethoscope className="h-4 w-4 mr-1" />
+                                  Devam Et
+                                </Button>
+                              </Link>
+                            ) : (
+                              <Link href={`/visit/${visit.id}`}>
+                                <Button size="sm" variant="outline">
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Görüntüle
+                                </Button>
+                              </Link>
+                            )}
                             <Button
                               size="sm"
                               variant="ghost"
@@ -373,8 +402,17 @@ export default function VisitList() {
             </CardContent>
           </Card>
         </div>
-        </AnimatedPage>
-      </main>
+      </motion.main>
+      <ConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        title="Muayene Kaydı Silme"
+        description={`${deleteVisitName} hastasının muayene kaydını silmek istediğinize emin misiniz?`}
+        confirmText="Sil"
+        cancelText="İptal"
+        variant="destructive"
+      />
     </div>
   );
 } 

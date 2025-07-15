@@ -298,6 +298,46 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getAllVisits(limit = 100): Promise<(Visit & { patient: Patient })[]> {
+    await this.initialize();
+    try {
+      const results = await db
+        .select({
+          id: visits.id,
+          patientId: visits.patientId,
+          doctorId: visits.doctorId,
+          templateId: visits.templateId,
+          visitDate: visits.visitDate,
+          visitType: visits.visitType,
+          duration: visits.duration,
+          status: visits.status,
+          createdAt: visits.createdAt,
+          patient: {
+            id: patients.id,
+            name: patients.name,
+            surname: patients.surname,
+            tcKimlik: patients.tcKimlik,
+            birthDate: patients.birthDate,
+            gender: patients.gender,
+            sgkNumber: patients.sgkNumber,
+            phone: patients.phone,
+            email: patients.email,
+            address: patients.address,
+            createdAt: patients.createdAt
+          }
+        })
+        .from(visits)
+        .leftJoin(patients, eq(visits.patientId, patients.id))
+        .orderBy(desc(visits.visitDate))
+        .limit(limit);
+      
+      return results as (Visit & { patient: Patient })[];
+    } catch (error) {
+      console.error("Database error in getAllVisits:", error);
+      throw error;
+    }
+  }
+
   async getRecentVisits(limit = 10): Promise<(Visit & { patient: Patient })[]> {
     await this.initialize();
     try {

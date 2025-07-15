@@ -22,9 +22,13 @@ import { queryClient } from "@/lib/queryClient";
 import type { Visit } from "@/types/medical";
 import { motion } from "framer-motion";
 import { AnimatedPage, staggerContainer, staggerItem, hoverScale, hoverTap } from "@/components/AnimatedPage";
+import { ConfirmationDialog } from "@/components/ConfirmationDialog";
+import { useState } from "react";
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const [deleteVisitId, setDeleteVisitId] = useState<number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { data: recentVisits = [], isLoading } = useQuery<Visit[]>({
     queryKey: ["/api/visits/recent"],
@@ -46,6 +50,8 @@ export default function Dashboard() {
         title: "Başarılı",
         description: "Muayene kaydı silindi",
       });
+      setIsDeleteDialogOpen(false);
+      setDeleteVisitId(null);
     },
     onError: () => {
       toast({
@@ -53,14 +59,21 @@ export default function Dashboard() {
         description: "Muayene silinirken hata oluştu",
         variant: "destructive",
       });
+      setIsDeleteDialogOpen(false);
+      setDeleteVisitId(null);
     },
   });
 
   const handleDeleteVisit = (visitId: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (confirm("Bu muayene kaydını silmek istediğinize emin misiniz?")) {
-      deleteVisitMutation.mutate(visitId);
+    setDeleteVisitId(visitId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (deleteVisitId) {
+      deleteVisitMutation.mutate(deleteVisitId);
     }
   };
 
@@ -88,7 +101,7 @@ export default function Dashboard() {
       case "completed":
         return "bg-green-100 text-green-800";
       case "in_progress":
-        return "bg-blue-100 text-blue-800";
+        return "bg-yellow-100 text-yellow-800";
       case "cancelled":
         return "bg-red-100 text-red-800";
       default:
@@ -113,7 +126,7 @@ export default function Dashboard() {
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
       
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden flex flex-col">
         <AnimatedPage>
           {/* Header */}
           <motion.header 
@@ -133,7 +146,7 @@ export default function Dashboard() {
             </div>
           </motion.header>
 
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6">
             {/* Hızlı Eylemler */}
             <motion.div
@@ -154,7 +167,7 @@ export default function Dashboard() {
                       whileHover={hoverScale}
                       whileTap={hoverTap}
                     >
-                      <Card className="cursor-pointer hover:shadow-lg transition-shadow bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                      <Card className="cursor-pointer hover:shadow-lg transition-shadow bg-blue-500 text-white">
                         <CardContent className="p-6">
                           <div className="flex items-center space-x-4">
                             <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
@@ -177,7 +190,7 @@ export default function Dashboard() {
                       whileHover={hoverScale}
                       whileTap={hoverTap}
                     >
-                      <Card className="cursor-pointer hover:shadow-lg transition-shadow bg-gradient-to-r from-green-500 to-teal-600 text-white">
+                      <Card className="cursor-pointer hover:shadow-lg transition-shadow bg-blue-500 text-white">
                         <CardContent className="p-6">
                           <div className="flex items-center space-x-4">
                             <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
@@ -200,7 +213,7 @@ export default function Dashboard() {
                       whileHover={hoverScale}
                       whileTap={hoverTap}
                     >
-                      <Card className="cursor-pointer hover:shadow-lg transition-shadow bg-gradient-to-r from-orange-500 to-red-600 text-white">
+                      <Card className="cursor-pointer hover:shadow-lg transition-shadow bg-blue-500 text-white">
                         <CardContent className="p-6">
                           <div className="flex items-center space-x-4">
                             <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
@@ -246,56 +259,58 @@ export default function Dashboard() {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {recentVisits.slice(0, 5).map((visit, index) => (
-                          <Link key={visit.id} href={`/visit/${visit.id}`}>
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <span className="text-blue-600 font-medium">
-                                      {visit.patient?.name?.charAt(0)}{visit.patient?.surname?.charAt(0)}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <p className="font-medium text-gray-900">
-                                      {visit.patient?.name} {visit.patient?.surname}
-                                    </p>
-                                    <p className="text-sm text-gray-500">
-                                      Kardiyoloji Konsültasyonu
-                                    </p>
-                                  </div>
+                        {recentVisits.slice(0, 5).map((visit) => (
+                          <div key={visit.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <span className="text-blue-600 font-medium">
+                                    {visit.patient?.name?.charAt(0)}{visit.patient?.surname?.charAt(0)}
+                                  </span>
                                 </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-sm font-medium text-gray-900">{formatDate(visit.visitDate)}</p>
-                                <p className="text-sm text-gray-500">{formatTime(visit.visitDate)}</p>
-                              </div>
-                              <div className="flex items-center space-x-2 ml-4">
-                                <Badge className={getStatusColor(visit.status)}>
-                                  {getStatusText(visit.status)}
-                                </Badge>
-                                <div className="flex space-x-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                    }}
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => handleDeleteVisit(visit.id, e)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                <div>
+                                  <p className="font-medium text-gray-900">
+                                    {visit.patient?.name} {visit.patient?.surname}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    Kardiyoloji Konsültasyonu
+                                  </p>
                                 </div>
                               </div>
                             </div>
-                          </Link>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-gray-900">{formatDate(visit.visitDate)}</p>
+                              <p className="text-sm text-gray-500">{formatTime(visit.visitDate)}</p>
+                            </div>
+                            <div className="flex items-center space-x-2 ml-4 w-48 justify-end">
+                              <Badge className={getStatusColor(visit.status)}>
+                                {getStatusText(visit.status)}
+                              </Badge>
+                              {visit.status === 'in_progress' && (
+                                <Link href={`/visit/new?visitId=${visit.id}`}>
+                                  <Button size="sm" variant="outline" className="bg-yellow-400 hover:bg-yellow-500 text-white">
+                                    Devam Et
+                                  </Button>
+                                </Link>
+                              )}
+                              {visit.status === 'completed' && (
+                                <Link href={`/visit/${visit.id}`}>
+                                  <Button size="sm" variant="outline">
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    Görüntüle
+                                  </Button>
+                                </Link>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => handleDeleteVisit(visit.id, e)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -363,6 +378,16 @@ export default function Dashboard() {
           </div>
         </div>
         </AnimatedPage>
+        <ConfirmationDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onConfirm={confirmDelete}
+          title="Muayene Kaydı Silme"
+          description="Bu muayene kaydını silmek istediğinize emin misiniz?"
+          confirmText="Sil"
+          cancelText="İptal"
+          variant="destructive"
+        />
       </main>
     </div>
   );

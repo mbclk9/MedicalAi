@@ -13,6 +13,7 @@ import { Link } from "wouter";
 import type { Visit, Patient, MedicalNote, Recording, MedicalTemplate } from "@/types/medical";
 import { motion } from "framer-motion";
 import { AnimatedPage, slideVariants } from "@/components/AnimatedPage";
+import { visitApi, templateApi } from "@/services/api";
 
 interface VisitDetails {
   visit: Visit;
@@ -29,12 +30,14 @@ export default function PatientNote() {
   const visitId = params?.id;
 
   const { data: visitDetails, isLoading, error } = useQuery<VisitDetails>({
-    queryKey: [`/api/visits/${visitId}`],
+    queryKey: [`visit-details-${visitId}`],
+    queryFn: () => visitApi.getById(parseInt(visitId!)),
     enabled: !!visitId,
   });
 
   const { data: templates = [] } = useQuery<MedicalTemplate[]>({
-    queryKey: ["/api/templates"],
+    queryKey: ["templates"],
+    queryFn: () => templateApi.getAll(),
   });
 
   useEffect(() => {
@@ -93,7 +96,7 @@ export default function PatientNote() {
   }
 
   // Error state
-  if (error || !visitDetails) {
+  if (error || !visitDetails || !visitDetails.visit || !visitDetails.patient) {
     return (
       <div className="flex h-screen bg-gray-50">
         <Sidebar />
@@ -103,9 +106,9 @@ export default function PatientNote() {
               <AlertCircle className="h-10 w-10 text-red-600" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-xl font-semibold text-gray-900">Hasta Kaydı Bulunamadı</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Muayene Kaydı Bulunamadı</h3>
               <p className="text-gray-600">
-                Aradığınız hasta kaydına erişilemiyor. Kayıt silinmiş veya ID hatalı olabilir.
+                Aradığınız muayene kaydı veya hasta bilgisi eksik. Kayıt silinmiş, eksik veya bozulmuş olabilir.
               </p>
             </div>
             <Link href="/">

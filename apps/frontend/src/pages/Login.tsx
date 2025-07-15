@@ -31,7 +31,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="flex min-h-screen bg-gray-50 items-center justify-center overflow-auto">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
@@ -120,7 +120,7 @@ export default function Login() {
 
             <Button 
               type="submit" 
-              className="w-full py-6 text-base bg-blue-600 hover:bg-blue-700"
+              className="w-full py-6 text-base bg-blue-600 hover:bg-blue-700 text-white"
               disabled={isLoading}
             >
               {isLoading ? "Giriş yapılıyor..." : "Giriş Yap"}

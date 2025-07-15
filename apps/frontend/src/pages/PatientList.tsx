@@ -88,7 +88,7 @@ export default function PatientList() {
         <div className="bg-white shadow-sm border-b px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link to="/">
+              <Link href="/">
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Ana Sayfa
@@ -101,8 +101,8 @@ export default function PatientList() {
                 </p>
               </div>
             </div>
-            <Link to="/patients/add">
-              <Button className="bg-blue-600 hover:bg-blue-700">
+            <Link href="/patients/add">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Yeni Hasta Ekle
               </Button>
@@ -174,8 +174,8 @@ export default function PatientList() {
                           }
                         </p>
                         {!searchTerm && (
-                          <Link to="/patients/add">
-                            <Button className="bg-blue-600 hover:bg-blue-700">
+                          <Link href="/patients/add">
+                            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                               <UserPlus className="mr-2 h-4 w-4" />
                               İlk Hastayı Ekle
                             </Button>
@@ -201,7 +201,7 @@ export default function PatientList() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end space-x-2">
-                          <Link to={`/visit/new?patientId=${patient.id}`}>
+                          <Link href={`/visit/new?patientId=${patient.id}`}>
                             <Button size="sm" variant="outline">
                               Muayene Başlat
                             </Button>

@@ -34,14 +34,16 @@ export interface MedicalTemplate {
   id: number;
   name: string;
   specialty: string;
-  description?: string;
+  description: string;
   structure: {
     subjective: string[];
     objective: string[];
     assessment: string[];
     plan: string[];
   };
-  isDefault?: boolean;
+  isDefault: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface MedicalNote {

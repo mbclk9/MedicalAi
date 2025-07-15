@@ -4,6 +4,50 @@ import cors from "cors";
 import { client, db } from "@repo/db";
 import { sql } from "drizzle-orm";
 
+// Environment validation function
+function validateEnvironment() {
+  const requiredEnvVars = [
+    'DATABASE_URL'
+  ];
+  
+  const optionalEnvVars = [
+    'ANTHROPIC_API_KEY',
+    'OPENAI_API_KEY',
+    'DEEPGRAM_API_KEY'
+  ];
+  
+  console.log("🔧 Environment validation starting...");
+  
+  // Check required environment variables
+  const missingRequired = requiredEnvVars.filter(env => !process.env[env]);
+  if (missingRequired.length > 0) {
+    console.error("❌ Missing required environment variables:", missingRequired.join(', '));
+    throw new Error(`Missing required environment variables: ${missingRequired.join(', ')}`);
+  }
+  
+  // Check optional environment variables
+  const missingOptional = optionalEnvVars.filter(env => !process.env[env]);
+  if (missingOptional.length > 0) {
+    console.warn("⚠️  Missing optional environment variables:", missingOptional.join(', '));
+    console.warn("⚠️  Some AI services may not work without these keys");
+  }
+  
+  // API key format validation
+  if (process.env.DEEPGRAM_API_KEY && !process.env.DEEPGRAM_API_KEY.startsWith('Token ')) {
+    console.warn("⚠️  DEEPGRAM_API_KEY should start with 'Token '");
+  }
+  
+  if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.startsWith('sk-')) {
+    console.warn("⚠️  OPENAI_API_KEY should start with 'sk-'");
+  }
+  
+  if (process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_API_KEY.startsWith('sk-ant-')) {
+    console.warn("⚠️  ANTHROPIC_API_KEY should start with 'sk-ant-'");
+  }
+  
+  console.log("✅ Environment validation completed");
+}
+
 // Veritabanı bağlantısını test etmek için bir fonksiyon
 async function testDbConnection() {
   try {
@@ -11,7 +55,7 @@ async function testDbConnection() {
     await client.connect();
     console.log("✅ Veritabanı istemcisi başarıyla bağlandı.");
     // Basit bir sorgu çalıştırarak bağlantıyı doğrula
-    const result = await db.execute(sql`SELECT 1`);
+    const result = await client.query('SELECT 1');
     console.log("✅ Veritabanı test sorgusu başarılı.");
   } catch (err) {
     console.error("❌ Veritabanı bağlantısı başarısız:", err);
@@ -41,43 +85,32 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Body parsing middleware
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Logging middleware
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+// Set proper headers for Turkish characters
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      console.log(`[${new Date().toLocaleTimeString()}] ${logLine}`);
-    }
-  });
-
+// Request logging middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const timestamp = new Date().toISOString();
+  console.log(`${timestamp} ${req.method} ${req.url}`);
   next();
 });
 
 // Initialize app for Vercel
 async function initializeApp() {
   try {
+    // Validate environment first
+    validateEnvironment();
+    
     // Database bağlantısını test et ama hata durumunda devam et
     await testDbConnection();
     await registerRoutes(app);
@@ -139,8 +172,8 @@ async function getApp() {
   return initializedApp;
 }
 
-// Export the app for Vercel serverless functions
-export default async function handler(req: any, res: any) {
+// For Vercel deployment
+export default async function handler(req: Request, res: Response) {
   const app = await getApp();
   return app(req, res);
-};
+}

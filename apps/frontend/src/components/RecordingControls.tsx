@@ -28,7 +28,7 @@ import { useState } from "react";
 import type { MedicalNote } from "@/types/medical";
 
 interface RecordingControlsProps {
-  onTranscriptionReady?: (transcription: string) => void;
+  onTranscriptionReady?: (transcription: string, confidence?: number) => void;
   visitId?: number;
   templateId?: number;
 }
@@ -86,7 +86,7 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
 
   const handleSaveTranscript = () => {
     if (onTranscriptionReady) {
-      onTranscriptionReady(editedTranscript);
+      onTranscriptionReady(editedTranscript, recordingState.confidence);
     }
     setIsEditingTranscript(false);
   };
@@ -100,48 +100,48 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
     <div className="space-y-4">
       {/* Recording Control */}
       <div className="text-center space-y-4">
-        <div className="flex justify-center">
-          <Button
-            size="lg"
-            variant={recordingState.isRecording ? "destructive" : "default"}
-            onClick={recordingState.isRecording ? handleStopRecording : handleStartRecording}
+            <div className="flex justify-center">
+              <Button
+                size="lg"
+                variant={recordingState.isRecording ? "destructive" : "default"}
+                onClick={recordingState.isRecording ? handleStopRecording : handleStartRecording}
             disabled={isTranscribing || isGeneratingNote}
             className="w-20 h-20 rounded-full shadow-lg hover:scale-105 transition-all duration-200"
-          >
-            {recordingState.isRecording ? (
-              <Square className="h-8 w-8" />
-            ) : (
-              <Mic className="h-8 w-8" />
-            )}
-          </Button>
-        </div>
+              >
+                {recordingState.isRecording ? (
+                  <Square className="h-8 w-8" />
+                ) : (
+                  <Mic className="h-8 w-8" />
+                )}
+              </Button>
+            </div>
 
         {/* Timer */}
         <div className="space-y-1">
           <div className="text-2xl font-mono font-bold text-gray-900">
-            {formatDuration(recordingState.duration)}
-          </div>
+                {formatDuration(recordingState.duration)}
+              </div>
           <p className="text-xs text-gray-600">
-            {recordingState.isRecording 
+                {recordingState.isRecording 
               ? "Kayıt devam ediyor" 
-              : isTranscribing 
+                  : isTranscribing 
               ? "Metne dönüştürülüyor"
               : isGeneratingNote
               ? "AI not hazırlıyor"
               : "Kayıt başlatın"
-            }
-          </p>
-        </div>
+                }
+              </p>
+            </div>
 
-        {/* Recording Status */}
-        {recordingState.isRecording && (
-          <div className="flex justify-center">
+            {/* Recording Status */}
+            {recordingState.isRecording && (
+              <div className="flex justify-center">
             <Badge variant="destructive" className="animate-pulse text-xs">
               <Volume2 className="h-3 w-3 mr-1" />
               REC
-            </Badge>
-          </div>
-        )}
+                </Badge>
+              </div>
+            )}
 
         {/* Processing Status */}
         {(isTranscribing || isGeneratingNote) && (
@@ -150,9 +150,9 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
             <p className="text-xs text-gray-500">
               {isTranscribing ? "Transkripsiyon işleniyor..." : "AI not oluşturuluyor..."}
             </p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
       {/* Transcription */}
       {recordingState.transcription && (
@@ -164,9 +164,9 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
                 <span>Transkripsiyon</span>
               </div>
               {recordingState.confidence > 0 && (
-                <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs">
                   %{Math.round(recordingState.confidence * 100)}
-                </Badge>
+            </Badge>
               )}
             </CardTitle>
           </CardHeader>
@@ -175,50 +175,50 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
               <div className="space-y-3">
                 <div className="bg-gray-50 rounded-lg p-3 max-h-32 overflow-y-auto">
                   <p className="text-sm text-gray-700 leading-relaxed">
-                    {recordingState.transcription}
-                  </p>
+                        {recordingState.transcription}
+                      </p>
                 </div>
-                <Button
+                      <Button
                   onClick={handleEditTranscript}
                   variant="outline"
-                  size="sm"
+                        size="sm"
                   className="w-full text-xs"
-                >
+                      >
                   <Edit3 className="h-3 w-3 mr-1" />
                   Düzenle
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <Textarea
-                  value={editedTranscript}
-                  onChange={(e) => setEditedTranscript(e.target.value)}
+                      </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={editedTranscript}
+                      onChange={(e) => setEditedTranscript(e.target.value)}
                   className="min-h-[80px] text-sm"
-                  placeholder="Transkripsiyon metnini düzenleyin..."
-                />
+                      placeholder="Transkripsiyon metnini düzenleyin..."
+                    />
                 <div className="flex space-x-2">
-                  <Button
+                      <Button
                     onClick={handleCancelEdit}
                     variant="outline"
-                    size="sm"
+                        size="sm"
                     className="flex-1 text-xs"
-                  >
+                      >
                     <X className="h-3 w-3 mr-1" />
                     İptal
-                  </Button>
-                  <Button
+                      </Button>
+                      <Button
                     onClick={handleSaveTranscript}
-                    size="sm"
+                        size="sm"
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs"
-                  >
+                      >
                     <Check className="h-3 w-3 mr-1" />
                     Kaydet
-                  </Button>
-                </div>
+                      </Button>
+                    </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
       )}
 
       {/* AI Status */}
@@ -243,7 +243,7 @@ export function RecordingControls({ onTranscriptionReady, visitId, templateId }:
               </div>
             </div>
           ) : noteGenerated && medicalNote ? (
-            <div className="space-y-3">
+              <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <p className="text-sm font-medium text-green-700">Tamamlandı</p>

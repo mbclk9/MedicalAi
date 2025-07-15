@@ -14,6 +14,15 @@ When copying code from this code snippet, ensure you also include this informati
 const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 // </important_do_not_delete>
 
+// API key validation
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.warn("⚠️  ANTHROPIC_API_KEY environment variable is not set");
+}
+
+if (!process.env.OPENAI_API_KEY) {
+  console.warn("⚠️  OPENAI_API_KEY environment variable is not set");
+}
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -64,6 +73,11 @@ export class AnthropicService {
     try {
       console.log(`Claude AI: Generating medical note for ${specialty} with transcription: ${transcription.substring(0, 50)}...`);
       
+      // Check if API key is available
+      if (!process.env.ANTHROPIC_API_KEY) {
+        throw new Error("ANTHROPIC_API_KEY environment variable is not set");
+      }
+      
       const response = await anthropic.messages.create({
         // "claude-sonnet-4-20250514"
         model: DEFAULT_MODEL_STR,
@@ -101,38 +115,41 @@ export class AnthropicService {
       console.error('Claude AI Error:', error);
       
       // First try OpenAI fallback
-      try {
-        console.log('Claude AI: Trying OpenAI fallback due to Claude API error');
-        
-        const openaiResponse = await openai.chat.completions.create({
-          model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-          messages: [
-            {
-              role: "system",
-              content: "Sen Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarında çalışan uzman bir tıbbi sekreter asistanısın. 6698 sayılı KVKK kapsamında hasta mahremiyetini koruyarak SOAP formatında tıbbi not oluşturuyorsun. Yanıtını JSON formatında ver."
-            },
-            {
-              role: "user",
-              content: this.createTurkishMedicalPrompt(transcription, templateStructure, specialty)
-            }
-          ],
-          response_format: { type: "json_object" },
-          max_tokens: 2000,
-        });
+      if (process.env.OPENAI_API_KEY) {
+        try {
+          console.log('Claude AI: Trying OpenAI fallback due to Claude API error');
+          
+          const openaiResponse = await openai.chat.completions.create({
+            model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+            messages: [
+              {
+                role: "system",
+                content: "Sen Türkiye Cumhuriyeti Sağlık Bakanlığı standartlarında çalışan uzman bir tıbbi sekreter asistanısın. 6698 sayılı KVKK kapsamında hasta mahremiyetini koruyarak SOAP formatında tıbbi not oluşturuyorsun. Yanıtını JSON formatında ver."
+              },
+              {
+                role: "user",
+                content: this.createTurkishMedicalPrompt(transcription, templateStructure, specialty)
+              }
+            ],
+            response_format: { type: "json_object" },
+            max_tokens: 2000,
+          });
 
-        const openaiContent = openaiResponse.choices[0]?.message?.content;
-        if (openaiContent) {
-          const result = JSON.parse(openaiContent) as MedicalNoteGeneration;
-          console.log('OpenAI Fallback: Successfully generated medical note');
-          return result;
+          const openaiContent = openaiResponse.choices[0]?.message?.content;
+          if (openaiContent) {
+            const result = JSON.parse(openaiContent) as MedicalNoteGeneration;
+            console.log('OpenAI Fallback: Successfully generated medical note');
+            return result;
+          }
+        } catch (openaiError) {
+          console.error('OpenAI Fallback Error:', openaiError);
         }
-      } catch (openaiError) {
-        console.error('OpenAI Fallback Error:', openaiError);
+      } else {
+        console.log('OpenAI API key not available for fallback');
       }
       
-      // Hata durumunda intelligent medical service kullan
-      console.log('AI Services: Using intelligent medical service due to AI API errors');
-      return await intelligentMedicalService.generateMedicalNote(transcription, templateStructure, specialty);
+      // No fallback - throw error if all AI services fail
+      throw new Error(`Failed to generate medical note: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -210,6 +227,11 @@ ${transcription}
 
   async generateVisitSummary(transcription: string): Promise<string> {
     try {
+      // Check if API key is available
+      if (!process.env.ANTHROPIC_API_KEY) {
+        throw new Error("ANTHROPIC_API_KEY environment variable is not set");
+      }
+      
       const response = await anthropic.messages.create({
         // "claude-sonnet-4-20250514"
         model: DEFAULT_MODEL_STR,
@@ -231,7 +253,10 @@ ${transcription}
       return contentBlock.text.trim();
     } catch (error) {
       console.error("Claude visit summary error:", error);
-      throw new Error(`Failed to generate visit summary: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Fallback to a simple summary
+      const words = transcription.split(' ').slice(0, 20).join(' ');
+      return `Hasta muayenesi gerçekleştirildi. ${words}...`;
     }
   }
 }

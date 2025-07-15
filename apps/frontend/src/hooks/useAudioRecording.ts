@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import type { TranscriptionResult, RecordingState } from "@/types/medical";
 
 export function useAudioRecording(
-  onTranscriptionReady?: (transcription: string) => void,
+  onTranscriptionReady?: (transcription: string, confidence?: number) => void,
   options?: {
     visitId?: number;
     templateId?: number;
@@ -126,7 +126,7 @@ export function useAudioRecording(
               
               // Call the callback if provided
               if (onTranscriptionReady && result.text) {
-                onTranscriptionReady(result.text);
+                onTranscriptionReady(result.text, result.confidence);
               }
               
               // Auto-generate medical note if enabled (Freed.ai style)

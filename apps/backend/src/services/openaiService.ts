@@ -1,5 +1,10 @@
 import OpenAI from "openai";
 
+// API key validation
+if (!process.env.OPENAI_API_KEY) {
+  console.warn("⚠️  OPENAI_API_KEY environment variable is not set");
+}
+
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || "" 
@@ -51,6 +56,11 @@ export class OpenaiService {
     specialty: string = "Genel Tıp"
   ): Promise<MedicalNoteGeneration> {
     try {
+      // Check if API key is available
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error("OPENAI_API_KEY environment variable is not set");
+      }
+      
       const prompt = this.createTurkishMedicalPrompt(transcription, templateStructure, specialty);
       
       const response = await openai.chat.completions.create({
@@ -69,7 +79,7 @@ export class OpenaiService {
         temperature: 0.3, // Lower temperature for more consistent medical documentation
       });
 
-      const result = response.choices[0].message.content;
+      const result = response.choices[0]?.message?.content;
       if (!result) {
         throw new Error("OpenAI returned empty response");
       }
@@ -182,7 +192,7 @@ T.C. SAĞLIK BAKANLIĞI STANDARTLARI:
         max_tokens: 200,
       });
 
-      return response.choices[0].message.content || "Muayene özeti oluşturulamadı.";
+      return response.choices[0]?.message?.content || "Muayene özeti oluşturulamadı.";
     } catch (error) {
       console.error("OpenAI summary generation error:", error);
       throw new Error("Failed to generate visit summary");
@@ -190,4 +200,5 @@ T.C. SAĞLIK BAKANLIĞI STANDARTLARI:
   }
 }
 
+// Export singleton instance
 export const openaiService = new OpenaiService();

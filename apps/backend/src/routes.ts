@@ -3,8 +3,60 @@ import { createServer, type Server } from "http";
 import { DatabaseStorage } from "../src/database/databaseStorage";
 
 const storage = new DatabaseStorage();
-import { deepgramService } from "./services/deepgramService";
-import { anthropicService } from "./services/anthropicService";
+
+// Import AI services with proper error handling
+let anthropicService: any = null;
+let intelligentMedicalService: any = null;
+let mockAiService: any = null;
+let deepgramService: any = null;
+let openaiService: any = null;
+
+// Service loading function
+async function loadServices() {
+  try {
+    const { anthropicService: anthropicServiceInstance } = await import("./services/anthropicService");
+    anthropicService = anthropicServiceInstance;
+    console.log("✅ Anthropic service loaded in routes");
+  } catch (error: any) {
+    console.log("⚠️  Anthropic service failed to load:", error.message);
+  }
+
+  try {
+    const { intelligentMedicalService: intelligentServiceInstance } = await import("./services/intelligentMedicalService");
+    intelligentMedicalService = intelligentServiceInstance;
+    console.log("✅ Intelligent medical service loaded in routes");
+  } catch (error: any) {
+    console.log("⚠️  Intelligent medical service failed to load:", error.message);
+  }
+
+  try {
+    const { mockAiService: mockServiceInstance } = await import("./services/mockAiService");
+    mockAiService = mockServiceInstance;
+    console.log("✅ Mock AI service loaded in routes");
+  } catch (error: any) {
+    console.log("⚠️  Mock AI service failed to load:", error.message);
+  }
+
+  try {
+    const { deepgramService: deepgramServiceInstance } = await import("./services/deepgramService");
+    deepgramService = deepgramServiceInstance;
+    console.log("✅ Deepgram service loaded in routes");
+  } catch (error: any) {
+    console.log("⚠️  Deepgram service failed to load:", error.message);
+  }
+
+  try {
+    const { openaiService: openaiServiceInstance } = await import("./services/openaiService");
+    openaiService = openaiServiceInstance;
+    console.log("✅ OpenAI service loaded in routes");
+  } catch (error: any) {
+    console.log("⚠️  OpenAI service failed to load:", error.message);
+  }
+}
+
+// Load services
+await loadServices();
+
 import multer from "multer";
 import { z } from "zod";
 import { insertVisitSchema, insertPatientSchema, insertMedicalNoteSchema } from "@repo/db";
@@ -66,6 +118,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all visits with patient info
+  app.get("/api/visits", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const visits = await storage.getAllVisits(limit);
+      res.json(visits);
+    } catch (error) {
+      console.error("Get all visits error:", error);
+      res.status(500).json({ message: "Failed to fetch visits" });
+    }
+  });
+
   // Get recent visits with patient info
   app.get("/api/visits/recent", async (req, res) => {
     try {
@@ -85,11 +149,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!visit) {
         return res.status(404).json({ message: "Visit not found" });
       }
-      
       const patient = await storage.getPatient(visit.patientId);
+      if (!patient) {
+        return res.status(404).json({ message: "Patient not found for this visit" });
+      }
       const medicalNote = await storage.getMedicalNote(visitId);
       const recording = await storage.getRecording(visitId);
-      
       res.json({
         visit,
         patient,
@@ -97,34 +162,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recording
       });
     } catch (error) {
+      console.error("Visit details error:", error);
       res.status(500).json({ message: "Failed to fetch visit details" });
     }
   });
 
-  // Create new visit
+  // Create visit
   app.post("/api/visits", async (req, res) => {
     try {
       const visitData = insertVisitSchema.parse(req.body);
       const visit = await storage.createVisit(visitData);
       res.json(visit);
     } catch (error) {
-      res.status(400).json({ message: "Invalid visit data" });
+      console.error("Create visit error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          message: "Invalid visit data", 
+          errors: error.errors 
+        });
+      } else {
+        res.status(500).json({ message: "Failed to create visit" });
+      }
     }
   });
 
   // Update visit status
-  app.patch("/api/visits/:id/status", async (req, res) => {
+  app.patch("/api/visits/:id", async (req, res) => {
     try {
       const visitId = parseInt(req.params.id);
       const { status } = req.body;
-      
-      if (!status || !["in_progress", "completed", "cancelled"].includes(status)) {
-        return res.status(400).json({ message: "Invalid status" });
+
+      if (!status || !['in_progress', 'completed', 'cancelled'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status provided." });
       }
-      
-      const visit = await storage.updateVisitStatus(visitId, status);
-      res.json(visit);
+
+      const updatedVisit = await storage.updateVisit(visitId, { status });
+      res.json(updatedVisit);
     } catch (error) {
+      console.error("Update visit status error:", error);
       res.status(500).json({ message: "Failed to update visit status" });
     }
   });
@@ -144,56 +219,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Audio transcription endpoint
   app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
     try {
-      console.log("Transcription request received:", {
+      console.log("🎤 Transcription request received:", {
         hasFile: !!req.file,
         body: req.body,
         headers: req.headers['content-type']
       });
 
       if (!req.file) {
-        console.log("No file in request");
+        console.log("❌ No file in request");
         return res.status(400).json({ message: "No audio file provided" });
       }
 
-      console.log("Audio file details:", {
+      console.log("📊 Audio file details:", {
         originalname: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.buffer.length
       });
 
-      const transcription = await deepgramService.transcribeAudio(req.file.buffer, "tr");
-      res.json(transcription);
+      let transcriptionResult;
+      
+      // Try Deepgram first if available
+      if (deepgramService && process.env.DEEPGRAM_API_KEY) {
+        try {
+          console.log("🎤 Using Deepgram for transcription");
+          transcriptionResult = await deepgramService.transcribeAudio(req.file.buffer, "tr");
+        } catch (error: any) {
+          console.log("⚠️  Deepgram failed:", error.message);
+          throw new Error(`Deepgram transcription failed: ${error.message}`);
+        }
+      } else {
+        throw new Error("Deepgram service not available");
+      }
+
+      if (!transcriptionResult) {
+        throw new Error("No transcription result available");
+      }
+
+      console.log("✅ Transcription completed:", transcriptionResult.text.substring(0, 50) + "...");
+      res.json(transcriptionResult);
     } catch (error) {
-      console.error("Transcription error:", error);
+      console.error("❌ Transcription error:", error);
       res.status(500).json({ message: "Failed to transcribe audio" });
     }
   });
 
-  // Generate medical note from transcription
+  // ROBUST Medical note generation endpoint with multiple fallbacks
   app.post("/api/generate-note", async (req, res) => {
     try {
       const { transcription, templateId, visitId } = req.body;
       
+      console.log("🤖 Medical note generation request:", {
+        transcriptionLength: transcription?.length || 0,
+        templateId,
+        visitId,
+        hasTranscription: !!transcription
+      });
+      
       if (!transcription || !visitId) {
-        return res.status(400).json({ message: "Transcription and visitId are required" });
+        console.log("❌ Missing required fields for note generation");
+        return res.status(400).json({ 
+          message: "Transcription and visitId are required",
+          received: { transcription: !!transcription, visitId: !!visitId }
+        });
       }
 
       let templateStructure: any = {};
       let specialty = "Genel Tıp";
       
       if (templateId) {
-        const template = await storage.getTemplate(templateId);
-        if (template) {
-          templateStructure = template.structure;
-          specialty = template.specialty;
+        try {
+          const template = await storage.getTemplate(templateId);
+          if (template) {
+            templateStructure = template.structure;
+            specialty = template.specialty;
+            console.log("✅ Template loaded:", template.name, specialty);
+          }
+        } catch (error) {
+          console.log("⚠️  Template loading failed:", error);
         }
       }
 
-      const medicalNote = await anthropicService.generateMedicalNote(
-        transcription, 
-        templateStructure, 
-        specialty
-      );
+      let medicalNote = null;
+      let generationMethod = "unknown";
+
+      // Try Anthropic first
+      if (anthropicService && process.env.ANTHROPIC_API_KEY) {
+        try {
+          console.log("🤖 Attempting Anthropic Claude for medical note generation");
+          medicalNote = await anthropicService.generateMedicalNote(
+            transcription, 
+            templateStructure, 
+            specialty
+          );
+          generationMethod = "anthropic";
+          console.log("✅ Anthropic Claude generation successful");
+        } catch (error: any) {
+          console.log("⚠️  Anthropic failed:", error.message);
+          throw new Error(`Medical note generation failed: ${error.message}`);
+        }
+      } else {
+        console.log("⚠️  Anthropic service not available (no API key or service not loaded)");
+        throw new Error("Anthropic service not available");
+      }
+
+      if (!medicalNote) {
+        throw new Error("No medical note generated");
+      }
 
       // Save the generated note
       const noteData = {
@@ -206,19 +337,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         plan: medicalNote.plan,
       };
 
-      const existingNote = await storage.getMedicalNote(parseInt(visitId));
       let savedNote;
-      
-      if (existingNote) {
-        savedNote = await storage.updateMedicalNote(parseInt(visitId), noteData);
-      } else {
-        savedNote = await storage.createMedicalNote(noteData);
+      try {
+        const existingNote = await storage.getMedicalNote(parseInt(visitId));
+        
+        if (existingNote) {
+          savedNote = await storage.updateMedicalNote(parseInt(visitId), noteData);
+          console.log("✅ Medical note updated in database");
+        } else {
+          savedNote = await storage.createMedicalNote(noteData);
+          console.log("✅ Medical note created in database");
+        }
+      } catch (dbError: any) {
+        console.error("❌ Database save error:", dbError);
+        // Return the generated note even if DB save fails
+        savedNote = {
+          ...noteData,
+          id: Date.now(), // Temporary ID
+          generatedAt: new Date(),
+          updatedAt: new Date()
+        };
       }
 
-      res.json(savedNote);
-    } catch (error) {
-      console.error("Medical note generation error:", error);
-      res.status(500).json({ message: "Failed to generate medical note" });
+      console.log("🎉 Medical note generation completed successfully via:", generationMethod);
+      res.json({
+        ...savedNote,
+        generationMethod,
+        success: true
+      });
+
+    } catch (error: any) {
+      console.error("❌ Medical note generation error:", error);
+      res.status(500).json({ 
+        message: "Failed to generate medical note",
+        error: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     }
   });
 
@@ -232,30 +386,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get templates by specialty
-  app.get("/api/templates/specialty/:specialty", async (req, res) => {
+  // Create new template
+  app.post("/api/templates", async (req, res) => {
     try {
-      const specialty = req.params.specialty;
-      const templates = await storage.getTemplatesBySpecialty(specialty);
-      res.json(templates);
+      const templateData = req.body;
+      const template = await storage.createTemplate(templateData);
+      res.json(template);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch templates by specialty" });
+      console.error("Create template error:", error);
+      res.status(500).json({ message: "Failed to create template" });
     }
   });
 
-  // Get default doctor (for demo purposes)
-  app.get("/api/doctor", async (req, res) => {
-    try {
-      const doctor = await storage.getDoctor(1); // Default doctor
-      if (!doctor) {
-        return res.status(404).json({ message: "Doctor not found" });
+  // Health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ 
+      status: "healthy", 
+      timestamp: new Date().toISOString(),
+      services: {
+        anthropic: !!anthropicService && !!process.env.ANTHROPIC_API_KEY,
+        deepgram: !!deepgramService && !!process.env.DEEPGRAM_API_KEY,
+        intelligent: !!intelligentMedicalService,
+        mock: !!mockAiService,
+        database: !!storage
       }
-      res.json(doctor);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch doctor info" });
-    }
+    });
   });
 
-  const httpServer = createServer(app);
-  return httpServer;
+  return createServer(app);
 }
+

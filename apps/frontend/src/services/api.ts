@@ -5,6 +5,13 @@
 
 import { Patient, Visit, MedicalNote, MedicalTemplate, Doctor } from '@repo/db';
 
+interface VisitDetails {
+  visit: Visit;
+  patient: Patient;
+  medicalNote?: MedicalNote;
+  recording?: any;
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 class ApiError extends Error {
@@ -78,7 +85,7 @@ export const visitApi = {
     return response.json();
   },
 
-  async getById(id: number): Promise<Visit> {
+  async getById(id: number): Promise<VisitDetails> {
     const response = await apiRequest('GET', `/visits/${id}`);
     return response.json();
   },
