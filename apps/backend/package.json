@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx --env-file=../../.env src/index.ts",
-    "build": "esbuild src/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build": "npm run db:push --workspace=@repo/db && esbuild src/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "start:dev": "cross-env NODE_ENV=development node dist/index.js",
     "db:push": "cd ../../packages/db && npm run db:push",
