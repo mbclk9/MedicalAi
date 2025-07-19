@@ -13,9 +13,9 @@ const createPatientSchema = z.object({
   tcKimlik: z.string().optional().nullable(),
   sgkNumber: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable().or(z.literal("")),
+  email: z.string().email("Geçersiz e-posta formatı").optional().nullable(),
   birthDate: z.string().optional().nullable(),
-  gender: z.enum(["erkek", "kadın"]).optional().nullable(),
+  gender: z.enum(["Erkek", "Kadın", "Diğer"]).optional().nullable(),
   address: z.string().optional().nullable(),
 });
 
