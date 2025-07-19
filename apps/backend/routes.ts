@@ -106,7 +106,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const visit = await storage.createVisit(visitData);
       res.json(visit);
     } catch (error) {
-      res.status(400).json({ message: "Invalid visit data" });
+      console.error("❌ Error creating visit:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Geçersiz ziyaret verisi", 
+          errors: error.flatten() 
+        });
+      }
+      res.status(500).json({ message: "Ziyaret oluşturulurken bir sunucu hatası oluştu." });
     }
   });
 

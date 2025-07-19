@@ -17,7 +17,9 @@ if (!DATABASE_URL) {
 // SSL ayarı, localhost olmayan bağlantılar için genellikle gereklidir.
 export const client = new Client({
   connectionString: DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 // Drizzle instance'ını oluştur ve dışa aktar
