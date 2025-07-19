@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { client, db } from "@repo/db";
 import { sql } from "drizzle-orm";
+import cors from 'cors'; 
 
 // Environment validation function
 function validateEnvironment() {
@@ -77,19 +78,13 @@ async function closeDbConnection() {
 const app = express();
 
 // CORS middleware - Vercel için optimize edilmiş
-app.use((req: Request, res: Response, next: NextFunction) => {
-  // Vercel'de tüm origin'lere izin ver
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  res.header('Content-Type', 'application/json; charset=utf-8');
-  
-  if (req.method === "OPTIONS") {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
+// Frontend'inizin Vercel'deki tam adresini buraya yazın
+const frontendURL = 'https://medical-ai-frontend-git-main-mbclk9s-projects.vercel.app';
+
+app.use(cors({
+  origin: frontendURL,
+  credentials: true
+}));
 
 // Body parsing middleware
 app.use(express.json({ limit: '50mb' }));
