@@ -65,8 +65,7 @@ export default function AddPatient() {
       
       console.log("Sending patient data:", cleanData);
       
-      const apiUrl = import.meta.env.VITE_API_URL;
-      const response = await apiRequest("POST", `${apiUrl}/patients`, cleanData);
+      const response = await apiRequest("POST", "/api/patients", cleanData);
       const result = await response.json();
       
       console.log("Patient creation response:", result);

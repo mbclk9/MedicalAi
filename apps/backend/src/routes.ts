@@ -93,27 +93,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create patient
   app.post("/api/patients", async (req, res) => {
     try {
-      console.log("Patient creation request:", req.body);
+      console.log("📝 Patient creation request:", req.body);
       
-      // Tarih string'ini Date objesine çevir
+      // Validate request body exists
+      if (!req.body || Object.keys(req.body).length === 0) {
+        console.log("❌ Empty request body");
+        return res.status(400).json({ 
+          error: "Request body is empty",
+          message: "Patient data is required"
+        });
+      }
+
+      // Validate required fields
+      const { name, surname } = req.body;
+      if (!name || !surname) {
+        console.log("❌ Missing required fields:", { name: !!name, surname: !!surname });
+        return res.status(400).json({ 
+          error: "Missing required fields", 
+          message: "Name and surname are required",
+          required: ["name", "surname"],
+          received: Object.keys(req.body)
+        });
+      }
+      
+      // Clean and transform the data
       const requestData = { ...req.body };
+      
+      // Transform date string to Date object
       if (requestData.birthDate && typeof requestData.birthDate === 'string') {
         requestData.birthDate = new Date(requestData.birthDate);
       }
       
+      // Transform gender to lowercase to match database expectations
+      if (requestData.gender) {
+        requestData.gender = requestData.gender.toLowerCase();
+      }
+      
+      // Clean empty strings to null
+      Object.keys(requestData).forEach(key => {
+        if (requestData[key] === '') {
+          requestData[key] = null;
+        }
+      });
+      
+      console.log("🧹 Cleaned patient data:", requestData);
+      
       const patientData = insertPatientSchema.parse(requestData);
-      console.log("Validated patient data:", patientData);
+      console.log("✅ Validated patient data:", patientData);
       const patient = await storage.createPatient(patientData);
-      res.json(patient);
+      
+      console.log("🎉 Patient created successfully:", patient.id, patient.name, patient.surname);
+      res.status(201).json({
+        ...patient,
+        message: "Patient created successfully"
+      });
     } catch (error) {
-      console.error("Patient creation error:", error);
+      console.error("❌ Patient creation error:", error);
       if (error instanceof z.ZodError) {
         res.status(400).json({ 
-          message: "Invalid patient data", 
-          errors: error.errors 
+          error: "Validation failed",
+          message: "Invalid patient data",
+          details: error.errors
         });
       } else {
-        res.status(400).json({ message: "Invalid patient data" });
+        res.status(500).json({ 
+          error: "Internal server error",
+          message: "Failed to create patient"
+        });
       }
     }
   });

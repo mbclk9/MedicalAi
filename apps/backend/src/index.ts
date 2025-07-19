@@ -1,6 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import cors from "cors";
 import { client, db } from "@repo/db";
 import { sql } from "drizzle-orm";
 
@@ -77,26 +76,24 @@ async function closeDbConnection() {
 
 const app = express();
 
-// CORS middleware - Vercel için daha esnek
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ["https://*.vercel.app", "https://*.vercel.app/*"] 
-    : ["http://localhost:3000", "http://localhost:3001"],
-  credentials: true
-}));
+// CORS middleware - Vercel için optimize edilmiş
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // Vercel'de tüm origin'lere izin ver
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header('Content-Type', 'application/json; charset=utf-8');
+  
+  if (req.method === "OPTIONS") {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 
 // Body parsing middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// Set proper headers for Turkish characters
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
-});
 
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
