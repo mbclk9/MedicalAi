@@ -153,6 +153,19 @@ app.get("/api/health", (req: Request, res: Response) => {
   res.json({ 
     status: "healthy", 
     timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    vercel: {
+      region: process.env.VERCEL_REGION || 'unknown',
+      url: process.env.VERCEL_URL || 'unknown'
+    },
+    endpoints: {
+      patients: ['GET /api/patients', 'POST /api/patients', 'DELETE /api/patients/:id'],
+      visits: ['GET /api/visits/:id', 'POST /api/visits', 'DELETE /api/visits/:id'],
+      templates: ['GET /api/templates'],
+      transcribe: ['POST /api/transcribe'],
+      doctor: ['GET /api/doctor'],
+      health: ['GET /api/health']
+    },
     services: {
       anthropic: !!anthropicService && !!process.env.ANTHROPIC_API_KEY,
       openai: !!process.env.OPENAI_API_KEY,
@@ -179,18 +192,20 @@ app.get("/api/doctor", async (req: Request, res: Response) => {
 // Recent visits endpoint
 app.get("/api/visits/recent", async (req: Request, res: Response) => {
   try {
+    console.log("📋 Fetching recent visits...");
     const visits = await storage.getRecentVisits();
+    console.log(`✅ Found ${visits.length} recent visits`);
     res.json(visits);
   } catch (error: any) {
     console.error("❌ Recent visits endpoint error:", error);
-    res.status(500).json({ error: "Failed to fetch recent visits" });
+    res.status(500).json({ error: "Failed to fetch recent visits", details: error.message });
   }
 });
 
 // Visit endpoints
 app.get("/api/visits/:id", async (req: Request, res: Response) => {
   try {
-    const visitId = parseInt(req.params.id, 10);
+    const visitId = parseInt(req.params.id || "0", 10);
     if (isNaN(visitId)) {
       return res.status(400).json({ error: "Invalid visit ID" });
     }
@@ -218,7 +233,7 @@ app.post("/api/visits", async (req: Request, res: Response) => {
 
 app.delete("/api/visits/:id", async (req: Request, res: Response) => {
   try {
-    const visitId = parseInt(req.params.id, 10);
+    const visitId = parseInt(req.params.id || "0", 10);
     if (isNaN(visitId)) {
       return res.status(400).json({ error: "Invalid visit ID" });
     }
@@ -242,9 +257,74 @@ app.get("/api/templates", async (req: Request, res: Response) => {
   }
 });
 
-// Patient endpoints - Import detailed routes
-import patientRoutes from './routes/patients';
-app.use('/api/patients', patientRoutes);
+// Patient endpoints - Add direct routes for Vercel compatibility
+app.get("/api/patients", async (req: Request, res: Response) => {
+  try {
+    const patients = await storage.getPatients();
+    res.json(patients);
+  } catch (error: any) {
+    console.error("❌ Get patients error:", error);
+    res.status(500).json({ error: "Failed to fetch patients" });
+  }
+});
+
+app.post("/api/patients", async (req: Request, res: Response) => {
+  try {
+    console.log("📝 Creating patient:", req.body);
+    
+    // Validate request body
+    if (!req.body || !req.body.name || !req.body.surname) {
+      return res.status(400).json({ 
+        error: "Missing required fields", 
+        message: "Name and surname are required" 
+      });
+    }
+
+    // Clean and prepare data
+    const patientData = { ...req.body };
+    
+    // Transform gender to lowercase if provided
+    if (patientData.gender) {
+      patientData.gender = patientData.gender.toLowerCase();
+    }
+    
+    // Convert empty strings to null
+    Object.keys(patientData).forEach(key => {
+      if (patientData[key] === '') {
+        patientData[key] = null;
+      }
+    });
+
+    const patient = await storage.createPatient(patientData);
+    console.log("✅ Patient created:", patient.id);
+    
+    res.status(201).json({
+      ...patient,
+      message: "Patient created successfully"
+    });
+  } catch (error: any) {
+    console.error("❌ Create patient error:", error);
+    res.status(500).json({ 
+      error: "Failed to create patient",
+      message: error.message 
+    });
+  }
+});
+
+app.delete("/api/patients/:id", async (req: Request, res: Response) => {
+  try {
+    const patientId = parseInt(req.params.id || "0", 10);
+    if (isNaN(patientId)) {
+      return res.status(400).json({ error: "Invalid patient ID" });
+    }
+    
+    await storage.deletePatient(patientId);
+    res.json({ success: true, message: "Patient deleted successfully" });
+  } catch (error: any) {
+    console.error("❌ Delete patient error:", error);
+    res.status(500).json({ error: "Failed to delete patient" });
+  }
+});
 
 // Transcription endpoint
 app.post("/api/transcribe", upload.single('audio'), async (req: Request, res: Response) => {

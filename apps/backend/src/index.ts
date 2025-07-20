@@ -175,8 +175,16 @@ async function getApp() {
   return initializedApp;
 }
 
-// For Vercel deployment
-export default async function handler(req: Request, res: Response) {
-  const app = await getApp();
-  return app(req, res);
+// For Vercel deployment - proper serverless function export
+export default async function handler(req: any, res: any) {
+  try {
+    const app = await getApp();
+    return app(req, res);
+  } catch (error: any) {
+    console.error("❌ Handler error:", error);
+    return res.status(500).json({
+      error: "Internal server error",
+      message: error.message
+    });
+  }
 }
