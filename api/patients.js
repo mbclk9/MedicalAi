@@ -12,9 +12,14 @@ const client = new Client({
 let connected = false;
 async function ensureConnection() {
   if (!connected) {
-    await client.connect();
-    connected = true;
-    console.log('✅ Connected to Neon database');
+    try {
+      await client.connect();
+      connected = true;
+      console.log('✅ Connected to Neon database');
+    } catch (error) {
+      console.error('❌ Database connection failed:', error);
+      throw error;
+    }
   }
 }
 
