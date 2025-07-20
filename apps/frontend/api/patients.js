@@ -20,7 +20,7 @@ async function ensureConnection() {
 }
 
 // Vercel serverless function
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -53,7 +53,7 @@ export default async function handler(req: any, res: any) {
   }
 }
 
-async function handleGet(req: any, res: any) {
+async function handleGet(req, res) {
   try {
     console.log('📋 Fetching patients...');
     

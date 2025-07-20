@@ -1,4 +1,4 @@
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -9,11 +9,16 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
+  console.log('🚀 Test API endpoint called!');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  
   res.json({
     message: 'API is working!',
     timestamp: new Date().toISOString(),
     method: req.method,
     url: req.url,
-    headers: req.headers
+    environment: process.env.NODE_ENV,
+    database: !!process.env.DATABASE_URL
   });
 } 

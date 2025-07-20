@@ -4,11 +4,19 @@
   "installCommand": "npm install --legacy-peer-deps",
   "outputDirectory": "apps/frontend/dist",
   
-  "functions": {
-    "apps/frontend/api/**/*.js": {
-      "runtime": "nodejs18.x"
+  "builds": [
+    {
+      "src": "apps/frontend/api/**/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "apps/frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     }
-  },
+  ],
 
   "routes": [
     {
