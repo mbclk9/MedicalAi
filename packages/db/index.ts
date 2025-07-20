@@ -3,27 +3,23 @@ import { sql } from 'drizzle-orm';
 import { Client } from 'pg';
 import * as schema from './schema';
 
-// Veritabanı bağlantı URL'si ortam değişkeninden alınmalıdır.
-// Bu paketi kullanan uygulama (örn. backend) .env dosyasını yüklemekten sorumludur.
+// Vercel için optimize edilmiş veritabanı bağlantısı
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  console.error("❌ Veritabanı bağlantısı için DATABASE_URL ayarlanmalıdır.");
-  // Uygulama başlangıcında bu hatayı yakalamak için bir hata fırlatmak daha iyidir.
-  throw new Error("DATABASE_URL çevre değişkeni ayarlanmadı.");
+  console.error("❌ DATABASE_URL environment variable is required");
+  throw new Error("DATABASE_URL environment variable is not set");
 }
 
-// `pg` istemcisini oluştur
-// SSL ayarı, localhost olmayan bağlantılar için genellikle gereklidir.
+console.log("🔗 Initializing database connection for Vercel...");
+
+// Vercel serverless için basit client kullan
 export const client = new Client({
   connectionString: DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-// Drizzle instance'ını oluştur ve dışa aktar
-// Gerçek bağlantı ilk sorgu sırasında kurulur.
+// Drizzle instance
 export const db = drizzle(client, { schema });
 
 // Kolay erişim için tüm şemaları dışa aktar

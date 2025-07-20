@@ -124,10 +124,14 @@ export default function NewVisit() {
       templateId?: number;
       visitType: string;
     }) => {
+      console.log("🏥 Creating visit with data:", visitData);
       const response = await apiRequest("POST", "/api/visits", visitData);
-      return response.json();
+      const result = await response.json();
+      console.log("✅ Visit creation response:", result);
+      return result;
     },
     onSuccess: (visit) => {
+      console.log("🎉 Visit created successfully:", visit);
       setCreatedVisitId(visit.id);
       setVisitCreated(true);
       queryClient.invalidateQueries({ queryKey: ["/api/visits/recent"] });
@@ -136,10 +140,27 @@ export default function NewVisit() {
         description: "Yeni muayene kaydı oluşturuldu.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("❌ Visit creation failed:", error);
+      
+      let errorMessage = "Muayene kaydı oluşturulurken hata oluştu.";
+      
+      if (error.message) {
+        try {
+          // Try to parse error message if it contains JSON
+          const errorData = JSON.parse(error.message.split(': ')[1] || '{}');
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch {
+          // If parsing fails, use the original error message
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Hata",
-        description: "Muayene kaydı oluşturulurken hata oluştu: " + error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     },

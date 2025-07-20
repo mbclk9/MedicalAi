@@ -23,21 +23,37 @@ import {
 import type { IStorage } from "../storage";
 
 export class DatabaseStorage implements IStorage {
-  private initialized = false;
+  private static initialized = false;
+  private static initPromise: Promise<void> | null = null;
 
   constructor() {
-    this.initialize();
+    // Vercel'de her istek için yeni instance oluşturulabilir
+    // Bu yüzden static initialization kullanıyoruz
   }
 
   private async initialize() {
-    if (this.initialized) return;
+    if (DatabaseStorage.initialized) return;
+    
+    // Eğer initialization zaten başlamışsa, onu bekle
+    if (DatabaseStorage.initPromise) {
+      return DatabaseStorage.initPromise;
+    }
+
+    DatabaseStorage.initPromise = this.performInitialization();
+    return DatabaseStorage.initPromise;
+  }
+
+  private async performInitialization() {
     try {
-      console.log("🔄 Initializing database...");
+      console.log("🔄 Initializing database for Vercel...");
       await this.seedData();
-      this.initialized = true;
+      DatabaseStorage.initialized = true;
       console.log("✅ Database initialized successfully");
     } catch (error) {
       console.error("❌ Failed to initialize database:", error);
+      // Reset promise so it can be retried
+      DatabaseStorage.initPromise = null;
+      throw error;
     }
   }
 

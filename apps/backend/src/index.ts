@@ -51,14 +51,25 @@ function validateEnvironment() {
 // Veritabanı bağlantısını test etmek için bir fonksiyon
 async function testDbConnection() {
   try {
-    console.log("🔗 Veritabanına bağlanılıyor...");
+    console.log("🔗 Vercel veritabanına bağlanılıyor...");
+    
+    // Client bağlantı durumunu kontrol et (pg Client için doğru property)
+    try {
+      await client.query('SELECT 1');
+      console.log("✅ Veritabanı zaten bağlı.");
+      return;
+    } catch {
+      // Bağlantı yok, devam et
+    }
+    
     await client.connect();
-    console.log("✅ Veritabanı istemcisi başarıyla bağlandı.");
+    console.log("✅ Vercel veritabanı istemcisi başarıyla bağlandı.");
+    
     // Basit bir sorgu çalıştırarak bağlantıyı doğrula
-    const result = await client.query('SELECT 1');
-    console.log("✅ Veritabanı test sorgusu başarılı.");
-  } catch (err) {
-    console.error("❌ Veritabanı bağlantısı başarısız:", err);
+    const result = await client.query('SELECT 1 as test');
+    console.log("✅ Vercel veritabanı test sorgusu başarılı:", result.rows[0]);
+  } catch (err: any) {
+    console.error("❌ Vercel veritabanı bağlantısı başarısız:", err.message);
     // Vercel'de process.exit kullanmayalım, sadece log yapalım
     console.error("Veritabanı bağlantısı başarısız olmasına rağmen uygulama devam ediyor...");
   }

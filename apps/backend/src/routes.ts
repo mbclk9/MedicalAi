@@ -59,7 +59,7 @@ await loadServices();
 
 import multer from "multer";
 import { z } from "zod";
-import { insertVisitSchema, insertPatientSchema, insertMedicalNoteSchema } from "@repo/db";
+import { insertVisitSchema, insertPatientSchema, insertMedicalNoteSchema, db, sql, doctors, patients } from "@repo/db";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -216,20 +216,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create visit
   app.post("/api/visits", async (req, res) => {
     try {
-      const visitData = insertVisitSchema.parse(req.body);
-      const visit = await storage.createVisit(visitData);
-      res.json(visit);
-    } catch (error) {
-      console.error("Create visit error:", error);
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ 
-          message: "Invalid visit data", 
-          errors: error.errors 
+      console.log("📝 Visit creation request:", req.body);
+      
+      // Validate request body exists
+      if (!req.body || Object.keys(req.body).length === 0) {
+        console.log("❌ Empty request body");
+        return res.status(400).json({ 
+          error: "Request body is empty",
+          message: "Visit data is required"
         });
-      } else {
-        res.status(500).json({ message: "Failed to create visit" });
       }
-    }
+
+      // Validate required fields
+      const { patientId, doctorId, visitType } = req.body;
+      if (!patientId || !doctorId || !visitType) {
+        console.log("❌ Missing required fields:", { 
+          patientId: !!patientId, 
+          doctorId: !!doctorId, 
+          visitType: !!visitType 
+        });
+        return res.status(400).json({ 
+          error: "Missing required fields", 
+          message: "PatientId, doctorId and visitType are required",
+          required: ["patientId", "doctorId", "visitType"],
+          received: Object.keys(req.body)
+        });
+      }
+
+             // For now, just log patient ID (skip patient check to avoid DB issues)
+       console.log("ℹ️  Using patientId:", patientId);
+
+             // For now, just ensure doctor ID is valid (skip doctor check to avoid DB issues)
+       console.log("ℹ️  Using doctorId:", doctorId);
+
+      // Validate and parse visit data
+      let visitData;
+      try {
+        visitData = insertVisitSchema.parse(req.body);
+        console.log("✅ Visit data validated:", visitData);
+      } catch (zodError) {
+        console.log("❌ Visit validation error:", zodError);
+        if (zodError instanceof z.ZodError) {
+          return res.status(400).json({ 
+            error: "Validation failed",
+            message: "Invalid visit data", 
+            details: zodError.errors 
+          });
+        } else {
+          return res.status(400).json({ 
+            error: "Validation failed",
+            message: "Invalid visit data" 
+          });
+        }
+      }
+
+             // Create the visit
+       let visit;
+       try {
+         console.log("💾 Attempting to create visit in database...");
+         console.log("📋 Visit data to insert:", JSON.stringify(visitData, null, 2));
+         
+         visit = await storage.createVisit(visitData);
+         console.log("🎉 Visit created successfully with ID:", visit.id);
+         console.log("📄 Created visit details:", JSON.stringify(visit, null, 2));
+       } catch (dbError: any) {
+         console.error("❌ Database error creating visit:", dbError);
+         console.error("❌ Error details:", {
+           message: dbError.message,
+           code: dbError.code,
+           detail: dbError.detail,
+           stack: dbError.stack
+         });
+         
+         return res.status(500).json({
+           error: "Database error",
+           message: "Failed to create visit in database",
+           details: process.env.NODE_ENV === 'development' ? {
+             dbError: dbError.message,
+             code: dbError.code,
+             detail: dbError.detail
+           } : undefined
+         });
+       }
+
+      res.status(201).json({
+        ...visit,
+        message: "Visit created successfully"
+      });
+         } catch (error: any) {
+       console.error("💥 Unexpected error in visit creation:", error);
+       res.status(500).json({ 
+         error: "Internal server error",
+         message: "An unexpected error occurred while creating the visit",
+         details: process.env.NODE_ENV === 'development' ? error.message : undefined
+       });
+     }
   });
 
   // Update visit status
@@ -449,6 +530,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ 
       status: "healthy", 
       timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      vercel: {
+        region: process.env.VERCEL_REGION || 'unknown',
+        url: process.env.VERCEL_URL || 'unknown'
+      },
+      database: {
+        configured: !!process.env.DATABASE_URL,
+        url_preview: process.env.DATABASE_URL ? 
+          process.env.DATABASE_URL.replace(/:[^@]*@/, ':***@').substring(0, 50) + '...' : 
+          'not set'
+      },
       services: {
         anthropic: !!anthropicService && !!process.env.ANTHROPIC_API_KEY,
         deepgram: !!deepgramService && !!process.env.DEEPGRAM_API_KEY,
@@ -457,6 +549,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         database: !!storage
       }
     });
+  });
+
+  // Database diagnostic endpoint
+  app.get("/api/db-status", async (req, res) => {
+    try {
+      console.log("🔍 Checking database status...");
+      
+      // Test basic connection
+      const connectionTest = await db.execute(sql`SELECT 1 as test`);
+      console.log("✅ Database connection test passed");
+      
+      // Check if tables exist
+      const tablesExist = await db.execute(sql`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name IN ('doctors', 'patients', 'visits', 'medical_templates')
+      `);
+      
+      console.log("📋 Found tables:", tablesExist.rows);
+      
+      // Count records in each table
+      let tableCounts: any = {};
+      try {
+        const doctorCount = await db.select().from(doctors);
+        tableCounts.doctors = doctorCount.length;
+      } catch (e) { tableCounts.doctors = 'error'; }
+      
+      try {
+        const patientCount = await db.select().from(patients);
+        tableCounts.patients = patientCount.length;
+      } catch (e) { tableCounts.patients = 'error'; }
+      
+      res.json({
+        status: "connected",
+        timestamp: new Date().toISOString(),
+        connection: "success",
+        tables: tablesExist.rows,
+        counts: tableCounts
+      });
+    } catch (error: any) {
+      console.error("❌ Database status check failed:", error);
+      res.status(500).json({
+        status: "error",
+        timestamp: new Date().toISOString(),
+        error: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+    }
   });
 
   return createServer(app);
