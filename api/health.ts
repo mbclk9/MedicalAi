@@ -23,12 +23,16 @@ export default async function handler(req: any, res: any) {
     },
     endpoints: [
       'GET /api/health',
+      'GET /api/doctor',
       'GET /api/patients',
       'POST /api/patients', 
-      'DELETE /api/patients',
+      'DELETE /api/patients/:id',
       'GET /api/visits',
       'POST /api/visits',
-      'DELETE /api/visits'
+      'DELETE /api/visits/:id',
+      'GET /api/visits/recent',
+      'GET /api/visits/[id]',
+      'GET /api/templates'
     ]
   });
 } 

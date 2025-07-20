@@ -7,6 +7,9 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// API Base URL - same logic as in services/api.ts
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
 export async function apiRequest(
   method: string,
   url: string,
@@ -14,7 +17,10 @@ export async function apiRequest(
 ): Promise<Response> {
   const isFormData = data instanceof FormData;
   
-  const res = await fetch(url, {
+  // If URL doesn't start with http, prepend API_BASE
+  const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: isFormData ? {} : data ? { "Content-Type": "application/json" } : {},
     body: isFormData ? data : data ? JSON.stringify(data) : undefined,
@@ -31,7 +37,11 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    const url = queryKey[0] as string;
+    // If URL doesn't start with http, prepend API_BASE
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+    
+    const res = await fetch(fullUrl, {
       credentials: "include",
     });
 

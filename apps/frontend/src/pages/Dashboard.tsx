@@ -36,7 +36,8 @@ export default function Dashboard() {
 
   const deleteVisitMutation = useMutation({
     mutationFn: async (visitId: number) => {
-      const response = await fetch(`/api/visits/${visitId}`, {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+      const response = await fetch(`${API_BASE}/visits/${visitId}`, {
         method: "DELETE",
       });
       if (!response.ok) {
