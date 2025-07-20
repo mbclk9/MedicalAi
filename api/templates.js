@@ -1,4 +1,4 @@
-import { Client } from 'pg';
+const { Client } = require('pg');
 
 // Neon database connection
 const client = new Client({
@@ -12,13 +12,18 @@ const client = new Client({
 let connected = false;
 async function ensureConnection() {
   if (!connected) {
-    await client.connect();
-    connected = true;
-    console.log('✅ Connected to Neon database');
+    try {
+      await client.connect();
+      connected = true;
+      console.log('✅ Connected to Neon database');
+    } catch (error) {
+      console.error('❌ Database connection failed:', error);
+      throw error;
+    }
   }
 }
 
-export default async function handler(req: any, res: any) {
+module.exports = async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -29,30 +34,25 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
-
   try {
     await ensureConnection();
-    
-    console.log('📋 Fetching templates...');
-    
-    const result = await client.query(`
-      SELECT id, name, specialty, description, structure, 
-             created_at as "createdAt", updated_at as "updatedAt"
-      FROM medical_templates 
-      ORDER BY name ASC
-    `);
-    
-    console.log(`✅ Found ${result.rows.length} templates`);
-    res.json(result.rows);
-  } catch (error: any) {
-    console.error('❌ Get templates error:', error);
+
+    if (req.method === 'GET') {
+      const result = await client.query(`
+        SELECT id, name, content, category, created_at as "createdAt"
+        FROM templates 
+        ORDER BY created_at DESC
+      `);
+      
+      res.json(result.rows);
+    } else {
+      res.status(405).json({ error: 'Method not allowed' });
+    }
+  } catch (error) {
+    console.error('❌ API Error:', error);
     res.status(500).json({ 
-      error: 'Failed to fetch templates',
+      error: 'Internal server error',
       message: error.message 
     });
   }
-} 
+}; 

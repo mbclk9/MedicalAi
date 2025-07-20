@@ -1,12 +1,26 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:frontend",
-  "installCommand": "npm install --legacy-peer-deps",
-  "outputDirectory": "apps/frontend/dist",
-  
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "nodejs18.x"
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "apps/frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/apps/frontend/dist/index.html"
+    }
+  ]
 }
