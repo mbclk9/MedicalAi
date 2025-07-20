@@ -1,4 +1,3 @@
-// Vercel API route types
 import { Client } from 'pg';
 
 // Neon database connection
@@ -19,7 +18,6 @@ async function ensureConnection() {
   }
 }
 
-// Vercel serverless function
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -44,7 +42,7 @@ export default async function handler(req, res) {
       default:
         res.status(405).json({ error: 'Method not allowed' });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ API Error:', error);
     res.status(500).json({ 
       error: 'Internal server error',
@@ -67,13 +65,13 @@ async function handleGet(req, res) {
     
     console.log(`✅ Found ${result.rows.length} patients`);
     res.json(result.rows);
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Get patients error:', error);
     res.status(500).json({ error: 'Failed to fetch patients' });
   }
 }
 
-async function handlePost(req: any, res: any) {
+async function handlePost(req, res) {
   try {
     console.log('📝 Creating patient:', req.body);
     
@@ -124,7 +122,7 @@ async function handlePost(req: any, res: any) {
       ...patient,
       message: "Patient created successfully"
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Create patient error:', error);
     res.status(500).json({ 
       error: 'Failed to create patient',
@@ -133,10 +131,10 @@ async function handlePost(req: any, res: any) {
   }
 }
 
-async function handleDelete(req: any, res: any) {
+async function handleDelete(req, res) {
   try {
     const { id } = req.query;
-    const patientId = parseInt(id as string);
+    const patientId = parseInt(id);
     
     if (isNaN(patientId)) {
       return res.status(400).json({ error: 'Invalid patient ID' });
@@ -144,7 +142,7 @@ async function handleDelete(req: any, res: any) {
     
     await client.query('DELETE FROM patients WHERE id = $1', [patientId]);
     res.json({ success: true, message: 'Patient deleted successfully' });
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Delete patient error:', error);
     res.status(500).json({ error: 'Failed to delete patient' });
   }
