@@ -59,7 +59,7 @@ export default defineConfig({
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
     'process.env.VITE_API_BASE_URL': JSON.stringify(
       process.env.NODE_ENV === 'production' 
-        ? 'https://medical-ai-backend.vercel.app/api'
+        ? '/api'
         : (process.env.VITE_API_BASE_URL || '/api')
     )
   }

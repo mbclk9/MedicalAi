@@ -51,27 +51,22 @@ function validateEnvironment() {
 // Veritabanı bağlantısını test etmek için bir fonksiyon
 async function testDbConnection() {
   try {
-    console.log("🔗 Vercel veritabanına bağlanılıyor...");
+    console.log("🔗 Neon veritabanına bağlanılıyor...");
     
-    // Client bağlantı durumunu kontrol et (pg Client için doğru property)
-    try {
-      await client.query('SELECT 1');
-      console.log("✅ Veritabanı zaten bağlı.");
-      return;
-    } catch {
-      // Bağlantı yok, devam et
-    }
-    
+    // Bağlantıyı aç
     await client.connect();
-    console.log("✅ Vercel veritabanı istemcisi başarıyla bağlandı.");
+    console.log("✅ Neon veritabanı istemcisi başarıyla bağlandı.");
     
     // Basit bir sorgu çalıştırarak bağlantıyı doğrula
     const result = await client.query('SELECT 1 as test');
-    console.log("✅ Vercel veritabanı test sorgusu başarılı:", result.rows[0]);
+    console.log("✅ Neon veritabanı test sorgusu başarılı:", result.rows[0]);
+    
+    // Bağlantıyı kapatma - uygulama çalışırken açık kalsın
+    // await client.end();
+    // console.log("✅ Veritabanı bağlantısı kapatıldı.");
   } catch (err: any) {
-    console.error("❌ Vercel veritabanı bağlantısı başarısız:", err.message);
-    // Vercel'de process.exit kullanmayalım, sadece log yapalım
-    console.error("Veritabanı bağlantısı başarısız olmasına rağmen uygulama devam ediyor...");
+    console.error("❌ Neon veritabanı bağlantısı başarısız:", err.message);
+    throw err; // Hatayı fırlat, uygulama başlamasın
   }
 }
 
@@ -114,8 +109,9 @@ async function initializeApp() {
     // Validate environment first
     validateEnvironment();
     
-    // Database bağlantısını test et ama hata durumunda devam et
+    // Database bağlantısını test et - başarısız olursa uygulama başlamasın
     await testDbConnection();
+    
     await registerRoutes(app);
     
     // Error handling middleware
@@ -135,7 +131,7 @@ async function initializeApp() {
     return app;
   } catch (error) {
     console.error("❌ App initialization failed:", error);
-    return app; // Return app even if initialization fails
+    throw error; // Hatayı fırlat, uygulama başlamasın
   }
 }
 

@@ -13,10 +13,12 @@ if (!DATABASE_URL) {
 
 console.log("🔗 Initializing database connection for Vercel...");
 
-// Vercel serverless için basit client kullan
+// Neon veritabanı için optimize edilmiş client
 export const client = new Client({
   connectionString: DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 // Drizzle instance

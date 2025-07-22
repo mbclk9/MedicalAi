@@ -5,8 +5,13 @@
  * Test verilerini veritabanına yükler
  */
 
-import { db } from '../database/db.js';
-import { doctors, patients, medicalTemplates } from '../../shared/schema.js';
+import { config } from 'dotenv';
+import path from 'path';
+
+// Load environment variables from the root .env file
+config({ path: path.resolve(process.cwd(), '../../.env') });
+
+import { db, doctors, patients, medicalTemplates } from '@repo/db';
 
 async function seed() {
   console.log('🌱 Database seed başlatılıyor...');

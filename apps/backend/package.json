@@ -11,7 +11,8 @@
     "vercel-build": "npm run build",
     "db:push": "cd ../../packages/db && npm run db:push",
     "db:studio": "cd ../../packages/db && npm run db:studio",
-    "db:generate": "cd ../../packages/db && npm run db:generate"
+    "db:generate": "cd ../../packages/db && npm run db:generate",
+    "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
