@@ -14,7 +14,26 @@
         "ANTHROPIC_API_KEY",
         "DEEPGRAM_API_KEY",
         "OPENAI_API_KEY",
-        "VITE_API_BASE_URL"
+        "VITE_API_BASE_URL",
+        "VITE_API_URL",
+        "POSTGRES_URL",
+        "POSTGRES_PRISMA_URL",
+        "DATABASE_URL_UNPOOLED",
+        "POSTGRES_URL_NON_POOLING",
+        "PGHOST",
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DATABASE",
+        "PGPASSWORD",
+        "PGDATABASE",
+        "PGHOST_UNPOOLED",
+        "PGUSER",
+        "POSTGRES_URL_NO_SSL",
+        "POSTGRES_HOST",
+        "NEON_PROJECT_ID",
+        "SESSION_SECRET",
+        "CORS_ORIGIN",
+        "MAX_FILE_SIZE"
       ]
     },
     "dev": {
