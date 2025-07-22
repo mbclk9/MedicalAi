@@ -15,4 +15,4 @@ computing gzip size...
 [2mdist/[22m[36massets/ui-Cw6ztssu.js      [39m[1m[2m 63.29 kB[22m[1m[22m[2m │ gzip:  21.71 kB[22m
 [2mdist/[22m[36massets/vendor-Ber6wfih.js  [39m[1m[2m139.86 kB[22m[1m[22m[2m │ gzip:  44.92 kB[22m
 [2mdist/[22m[36massets/index-D6pdYS9r.js   [39m[1m[2m374.04 kB[22m[1m[22m[2m │ gzip: 103.58 kB[22m
-[32m✓ built in 23.29s[39m
+[32m✓ built in 19.73s[39m

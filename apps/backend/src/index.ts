@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { client, db } from "@repo/db";
+import { pool, db } from "@repo/db";
+import session from 'express-session';
+import passport from 'passport';
 import { sql } from "drizzle-orm";
 import cors from 'cors'; 
 
@@ -53,17 +55,18 @@ async function testDbConnection() {
   try {
     console.log("🔗 Neon veritabanına bağlanılıyor...");
     
-    // Bağlantıyı aç
-    await client.connect();
+    // Pool'dan bir client al ve test et
+    const client = await pool.connect();
     console.log("✅ Neon veritabanı istemcisi başarıyla bağlandı.");
     
-    // Basit bir sorgu çalıştırarak bağlantıyı doğrula
-    const result = await client.query('SELECT 1 as test');
-    console.log("✅ Neon veritabanı test sorgusu başarılı:", result.rows[0]);
-    
-    // Bağlantıyı kapatma - uygulama çalışırken açık kalsın
-    // await client.end();
-    // console.log("✅ Veritabanı bağlantısı kapatıldı.");
+    try {
+      // Basit bir sorgu çalıştırarak bağlantıyı doğrula
+      const result = await client.query('SELECT 1 as test');
+      console.log("✅ Neon veritabanı test sorgusu başarılı:", result.rows[0]);
+    } finally {
+      // Client'ı pool'a geri ver
+      client.release();
+    }
   } catch (err: any) {
     console.error("❌ Neon veritabanı bağlantısı başarısız:", err.message);
     throw err; // Hatayı fırlat, uygulama başlamasın
@@ -74,7 +77,7 @@ async function testDbConnection() {
 async function closeDbConnection() {
     try {
         console.log("🔌 Veritabanı bağlantısı kapatılıyor...");
-        await client.end();
+        await pool.end();
         console.log("✅ Veritabanı bağlantısı kapatıldı.");
     } catch (error) {
         console.error("❌ Veritabanı bağlantısı kapatılırken hata:", error);

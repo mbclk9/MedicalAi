@@ -46,6 +46,6 @@ Using 'pg' driver for database querying
 [2K[1G[✓] Pulling schema from database...
 [i] No changes detected
 
-  dist\index.js  88.8kb
+  dist\index.js  88.4kb
 
-Done in 55ms
+Done in 60ms

@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db, doctors, patients, visits, medicalNotes, recordings, medicalTemplates } from "@repo/db";
 import { eq } from "drizzle-orm";
+import { storage } from "../storage";
 
 // Import AI services with proper error handling
 let anthropicService: any = null;
