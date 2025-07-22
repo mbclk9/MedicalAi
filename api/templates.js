@@ -1,4 +1,4 @@
-const { Client } = require('pg');
+giconst { Client } = require('pg');
 
 // Neon database connection
 const client = new Client({

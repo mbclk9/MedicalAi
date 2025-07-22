@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx --env-file=../../.env src/index.ts",
-    "build": "npm run db:push --workspace=@repo/db && esbuild src/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build": "npm run db:push --workspace=@repo/db && esbuild src/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:pg-native",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "start:dev": "cross-env NODE_ENV=development node dist/index.js",
+    "vercel-build": "npm run build",
     "db:push": "cd ../../packages/db && npm run db:push",
     "db:studio": "cd ../../packages/db && npm run db:studio",
     "db:generate": "cd ../../packages/db && npm run db:generate"

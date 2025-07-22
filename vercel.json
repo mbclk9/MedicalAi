@@ -2,8 +2,11 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
+      "src": "apps/backend/dist/index.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["apps/backend/dist/**"]
+      }
     },
     {
       "src": "apps/frontend/package.json",
@@ -16,11 +19,23 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "dest": "/apps/backend/dist/index.js"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/apps/frontend/dist/assets/$1"
     },
     {
       "src": "/(.*)",
       "dest": "/apps/frontend/dist/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "apps/backend/dist/index.js": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
