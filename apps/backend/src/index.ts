@@ -92,7 +92,8 @@ const frontendURL = 'https://medical-ai-frontend-git-main-mbclk9s-projects.verce
 
 app.use(cors({
   origin: frontendURL,
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 
 // Body parsing middleware
