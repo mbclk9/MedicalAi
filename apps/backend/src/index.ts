@@ -1,35 +1,42 @@
 import express, { type Request, Response, NextFunction } from "express";
-import cors from "cors";
 import { registerRoutes } from "./routes/index.js";
 import { pool } from "@repo/db";
 
-// ... (validateEnvironment, testDbConnection gibi diğer yardımcı fonksiyonlarınız burada kalabilir) ...
+// Diğer yardımcı fonksiyonlarınız (validateEnvironment, testDbConnection vb.) burada kalabilir
+// ...
 
 const app = express();
 
-// --- NİHAİ VE EN GÜÇLÜ CORS ÇÖZÜMÜ ---
-// Bu middleware, Vercel'in tüm katmanlarından önce çalışarak CORS başlıklarını ekler.
+// ==============================================================================
+// NİHAİ VE EN GÜÇLÜ CORS ÇÖZÜMÜ
+// Bu middleware, gelen her isteği en başta yakalar ve gerekli izinleri verir.
+// ==============================================================================
 app.use((req: Request, res: Response, next: NextFunction) => {
+  // İzin verilen adresleri ortam değişkeninden ve localhost'tan al
   const allowedOrigins = [process.env.FRONTEND_URL, "http://localhost:3000"];
   const origin = req.headers.origin;
 
+  // Gelen isteğin origin'i izin verilenler listesindeyse, o origin'e izin ver
   if (origin && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   
+  // İzin verilen metodları, başlıkları ve cookie kullanımını belirt
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
-  // Tarayıcının 'preflight' (OPTIONS) isteğine hemen yanıt ver ve devam etme.
+  // Tarayıcının gönderdiği 'preflight' (OPTIONS) isteğine hemen 'başarılı' yanıtı ver.
+  // Bu, 404 hatasını çözecek olan en kritik kısımdır.
   if (req.method === 'OPTIONS') {
     return res.sendStatus(204);
   }
 
+  // İstek bir 'preflight' değilse, normal akışına devam etsin
   next();
 });
 
-// Body parsing middleware
+// Body parsing middleware (CORS'tan sonra gelmeli)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -39,17 +46,18 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-
 // Rotaları kaydet
 registerRoutes(app);
 
-
-// Hata yönetimi
+// Hata yönetimi middleware'i
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Hata:', err);
-  res.status(err.status || 500).json({ message: err.message || "Sunucu Hatası" });
+  const status = err.status || 500;
+  const message = err.message || "Internal Server Error";
+  res.status(status).json({ message });
 });
 
-
-// Vercel için handler export'u
+// Vercel'e export edilecek ana fonksiyon
+// initializeApp gibi karmaşık sarmalayıcılara gerek olmadan, doğrudan app'i export etmek
+// Vercel'in serverless ortamında daha stabil çalışır.
 export default app;
