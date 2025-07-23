@@ -24,12 +24,12 @@ export default function PatientList() {
   const [patientToDelete, setPatientToDelete] = useState<{id: number, name: string} | null>(null);
 
   const { data: patients = [], isLoading } = useQuery<Patient[]>({
-    queryKey: ["/api/patients"],
+    queryKey: ["/patients"],
   });
 
   const deletePatientMutation = useMutation({
     mutationFn: async (patientId: number) => {
-      const response = await fetch(`/api/patients/${patientId}`, {
+      const response = await fetch(`/patients/${patientId}`, {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -38,7 +38,7 @@ export default function PatientList() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/patients"] });
+      queryClient.invalidateQueries({ queryKey: ["/patients"] });
       toast({
         title: "Başarılı",
         description: "Hasta kaydı silindi",

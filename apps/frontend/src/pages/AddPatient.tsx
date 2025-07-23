@@ -65,7 +65,7 @@ export default function AddPatient() {
       
       console.log("Sending patient data:", cleanData);
       
-      const response = await apiRequest("POST", "/api/patients", cleanData);
+      const response = await apiRequest("POST", "/patients", cleanData);
       const result = await response.json();
       
       console.log("Patient creation response:", result);
@@ -73,7 +73,7 @@ export default function AddPatient() {
       return result;
     },
     onSuccess: (newPatient: Patient) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/patients"] });
+      queryClient.invalidateQueries({ queryKey: ["/patients"] });
       toast({
         title: "Başarılı",
         description: `${newPatient.name} ${newPatient.surname} başarıyla eklendi.`,

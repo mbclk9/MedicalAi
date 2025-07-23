@@ -31,7 +31,7 @@ export default function Dashboard() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { data: recentVisits = [], isLoading } = useQuery<Visit[]>({
-    queryKey: ["/api/visits/recent"],
+    queryKey: ["/visits/recent"],
   });
 
   const deleteVisitMutation = useMutation({
@@ -46,7 +46,7 @@ export default function Dashboard() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/visits/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/visits/recent"] });
       toast({
         title: "Başarılı",
         description: "Muayene kaydı silindi",

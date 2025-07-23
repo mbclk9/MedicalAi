@@ -1,68 +1,61 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 
-async function throwIfResNotOk(res: Response) {
-  if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
-  }
-}
-
-// API Base URL - same logic as in services/api.ts
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
-export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
+/**
+ * Tüm API istekleri için merkezi fonksiyon.
+ * - URL'ye otomatik olarak /api önekini ekler.
+ * - Hata yönetimini merkezileştirir.
+ * - Yanıtı otomatik olarak JSON'a çevirir.
+ */
+export async function apiRequest(method: string, url: string, data?: unknown): Promise<any> {
   const isFormData = data instanceof FormData;
-  
-  // If URL doesn't start with http, prepend API_BASE
   const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
-  
-  const res = await fetch(fullUrl, {
-    method,
-    headers: isFormData ? {} : data ? { "Content-Type": "application/json" } : {},
-    body: isFormData ? data : data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
 
-  await throwIfResNotOk(res);
-  return res;
-}
-
-type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const url = queryKey[0] as string;
-    // If URL doesn't start with http, prepend API_BASE
-    const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
-    
-    const res = await fetch(fullUrl, {
+  try {
+    const response = await fetch(fullUrl, {
+      method: method.toUpperCase(),
+      headers: isFormData ? {} : data ? { "Content-Type": "application/json" } : {},
+      body: isFormData ? data : data ? JSON.stringify(data) : undefined,
       credentials: "include",
     });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+    if (!response.ok) {
+      // Hata durumunda sunucudan gelen mesajı yakala
+      const errorData = await response.json().catch(() => ({
+        message: `HTTP error! status: ${response.status} ${response.statusText}`,
+      }));
+      throw new Error(errorData.message || 'Bilinmeyen bir sunucu hatası oluştu.');
+    }
+    
+    // Yanıt gövdesi boş olabileceğinden (örn: 204 No Content) kontrol et
+    if (response.status === 204) {
       return null;
     }
 
-    await throwIfResNotOk(res);
-    return await res.json();
-  };
+    return response.json();
 
+  } catch (error) {
+    console.error("API Request Error:", error);
+    // Hatanın yeniden fırlatılması, React Query'nin onError callback'lerini tetikler.
+    throw error;
+  }
+}
+
+// Yeni QueryClient yapılandırması
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      // Varsayılan sorgu fonksiyonu artık doğrudan apiRequest'i kullanıyor.
+      // queryKey'den gelen ilk elemanı URL olarak alıp GET isteği atacak.
+      queryFn: ({ queryKey: [url] }) => apiRequest('GET', url as string),
+      refetchOnWindowFocus: false, // Gereksiz yeniden fetch'leri önler
+      staleTime: 1000 * 60 * 5, // Veriyi 5 dakika taze kabul et
+      retry: 1, // Hata durumunda 1 kez yeniden dene
     },
     mutations: {
+      // Varsayılan mutation fonksiyonunu da tanımlayabiliriz ancak genellikle
+      // useMutation içinde doğrudan çağrılır.
       retry: false,
     },
   },

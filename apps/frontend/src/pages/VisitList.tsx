@@ -31,7 +31,7 @@ export default function VisitList() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { data: visits = [], isLoading } = useQuery<Visit[]>({
-    queryKey: ["/api/visits"],
+    queryKey: ["/visits"],
   });
 
   const deleteVisitMutation = useMutation({
@@ -46,8 +46,8 @@ export default function VisitList() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/visits"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/visits/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/visits"] });
+      queryClient.invalidateQueries({ queryKey: ["/visits/recent"] });
       toast({
         title: "Başarılı",
         description: "Muayene kaydı silindi",
