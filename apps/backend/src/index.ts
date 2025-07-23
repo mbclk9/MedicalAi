@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import { registerRoutes } from "./routes/index";  // src/routes/index.ts (dikkat: ./routes/index)
 import { pool, db } from "@repo/db";
 import session from 'express-session';
 import passport from 'passport';
@@ -86,16 +86,16 @@ async function closeDbConnection() {
 
 const app = express();
 
-// CORS middleware - Vercel için optimize edilmiş
-// Frontend'inizin Vercel'deki tam adresini buraya yazın
-const frontendURL = 'https://medical-ai-frontend.vercel.app';
-
+// CORS middleware - test için '*', production'da domain'e değiştir
 app.use(cors({
-  origin: frontendURL,
+  origin: '*',  // Test için, sonra 'https://ai-medical-assistant.vercel.app' yap
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// OPTIONS preflight için
+app.options('*', cors());
 
 // Body parsing middleware
 app.use(express.json({ limit: '50mb' }));
@@ -104,7 +104,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   const timestamp = new Date().toISOString();
-  console.log(`${timestamp} ${req.method} ${req.url}`);
+  console.log(`${timestamp} ${req.method} ${req.url} - Body: ${JSON.stringify(req.body)}`);
   next();
 });
 
@@ -114,10 +114,11 @@ async function initializeApp() {
     // Validate environment first
     validateEnvironment();
     
-    // Database bağlantısını test et - başarısız olursa uygulama başlamasın
+    // Database bağlantısını test et
     await testDbConnection();
     
-    await registerRoutes(app);
+    // Route'ları yükle
+    registerRoutes(app);
     
     // Error handling middleware
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -128,7 +129,7 @@ async function initializeApp() {
     });
 
     // Health check endpoint
-    app.get('/health', (req, res) => {
+    app.get('/api/health', (req, res) => {
       res.json({ status: 'OK', timestamp: new Date().toISOString() });
     });
 
@@ -136,7 +137,7 @@ async function initializeApp() {
     return app;
   } catch (error) {
     console.error("❌ App initialization failed:", error);
-    throw error; // Hatayı fırlat, uygulama başlamasın
+    throw error;
   }
 }
 
