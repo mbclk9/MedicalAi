@@ -1,14 +1,24 @@
 import { QueryClient } from "@tanstack/react-query";
 
-// Production'da Vercel'deki backend URL'sini, local'de ise proxy için /api yolunu kullanır.
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+// Production'da Vercel'deki tam backend URL'sini, local'de ise boş string (proxy'yi kullanmak için) alır.
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
+/**
+ * Tüm API istekleri için merkezi ve DÜZELTİLMİŞ fonksiyon.
+ * - URL'ye /api önekini her zaman doğru şekilde ekler.
+ * - Hata yönetimini merkezileştirir.
+ * - Yanıtı otomatik olarak JSON'a çevirir.
+ */
 export async function apiRequest(method: string, url: string, data?: unknown): Promise<any> {
   const isFormData = data instanceof FormData;
   
-  // Gelen URL'nin başında / olduğundan emin olalım
+  // Gelen URL'nin başında / olduğundan emin olalım (örn: /patients)
   const path = url.startsWith('/') ? url : `/${url}`;
-  const fullUrl = `${API_BASE}${path}`;
+  
+  // NİHAİ DÜZELTME: API_BASE'i ve /api önekini doğru şekilde birleştir.
+  // Production'da: 'https://backend.vercel.app' + '/api' + '/patients'
+  // Local'de: '' + '/api' + '/patients' (proxy bunu yakalar)
+  const fullUrl = `${API_BASE}/api${path}`;
 
   try {
     const response = await fetch(fullUrl, {
@@ -39,7 +49,8 @@ export async function apiRequest(method: string, url: string, data?: unknown): P
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Artık URL'nin başında /api olmasına gerek yok, queryClient hallediyor.
+      // Artık URL'nin başında /api olmasına gerek yok, apiRequest fonksiyonu bunu hallediyor.
+      // Örn: queryKey: ["/patients"]
       queryFn: ({ queryKey: [url] }) => apiRequest('GET', url as string),
       refetchOnWindowFocus: false,
       staleTime: 1000 * 60 * 5,
