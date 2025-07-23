@@ -17,7 +17,7 @@ export async function apiRequest(method: string, url: string, data?: unknown): P
   
   // NİHAİ DÜZELTME: API_BASE'i ve /api önekini doğru şekilde birleştir.
   // Production'da: 'https://backend.vercel.app' + '/api' + '/patients'
-  // Local'de: '' + '/api' + '/patients' (proxy bunu yakalar)
+  // Local'de: '' + '/api' + '/patients' (vite.config.ts proxy bunu yakalar)
   const fullUrl = `${API_BASE}/api${path}`;
 
   try {
