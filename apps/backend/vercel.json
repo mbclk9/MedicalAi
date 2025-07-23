@@ -1,5 +1,14 @@
 {
   "version": 2,
+  "buildCommand": "turbo run build --filter=backend...",
+  "installCommand": "cd ../.. && npm install --legacy-peer-deps",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    }
+  ],
   "env": {
     "NODE_ENV": "production",
     "FRONTEND_URL": "https://medical-ai-frontend.vercel.app"

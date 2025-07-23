@@ -17,7 +17,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     process.env.FRONTEND_URL, 
     "http://localhost:3000",
     "https://medical-ai-frontend.vercel.app",
-    "https://medical-ai-frontend.vercel.app/"
+    "https://medical-ai-frontend.vercel.app/",
+    "https://medical-ai-frontend.vercel.app/*"
   ];
   const origin = req.headers.origin;
 
@@ -30,9 +31,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   }
   
   // İzin verilen metodları, başlıkları ve cookie kullanımını belirt
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 saat
 
   // Tarayıcının gönderdiği 'preflight' (OPTIONS) isteğine hemen 'başarılı' yanıtı ver.
   // Bu, 404 hatasını çözecek olan en kritik kısımdır.

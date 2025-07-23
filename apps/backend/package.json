@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx --env-file=../../.env src/index.ts",
-    "build": "npm run db:push --workspace=@repo/db && esbuild src/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:pg-native",
+    "build": "npm run db:push --workspace=@repo/db && esbuild src/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:pg-native && mkdir -p api && cp api/index.js api/",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "start:dev": "cross-env NODE_ENV=development node dist/index.js",
     "vercel-build": "npm run build",
