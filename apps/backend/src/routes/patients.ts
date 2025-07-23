@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { storage } from "../storage.js";
+import { storage } from "../../storage.js";
 import { z } from "zod";
 import { insertPatientSchema } from '@shared/schema';
 import { fromZodError } from 'zod-validation-error';

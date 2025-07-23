@@ -88,12 +88,13 @@ const app = express();
 
 // CORS middleware - Vercel için optimize edilmiş
 // Frontend'inizin Vercel'deki tam adresini buraya yazın
-const frontendURL = 'https://medical-ai-frontend-git-main-mbclk9s-projects.vercel.app';
+const frontendURL = 'https://medical-ai-frontend.vercel.app';
 
 app.use(cors({
   origin: frontendURL,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Body parsing middleware
