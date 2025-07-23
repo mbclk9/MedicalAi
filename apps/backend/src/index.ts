@@ -13,11 +13,19 @@ const app = express();
 // ==============================================================================
 app.use((req: Request, res: Response, next: NextFunction) => {
   // İzin verilen adresleri ortam değişkeninden ve localhost'tan al
-  const allowedOrigins = [process.env.FRONTEND_URL, "http://localhost:3000"];
+  const allowedOrigins = [
+    process.env.FRONTEND_URL, 
+    "http://localhost:3000",
+    "https://medical-ai-frontend.vercel.app",
+    "https://medical-ai-frontend.vercel.app/"
+  ];
   const origin = req.headers.origin;
 
   // Gelen isteğin origin'i izin verilenler listesindeyse, o origin'e izin ver
   if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (origin) {
+    // Geliştirme için tüm origin'lere izin ver (production'da kaldırın)
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   
