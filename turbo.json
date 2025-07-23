@@ -9,7 +9,7 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**"], 
       "env": [
-        "NODE_ENV",
+      "NODE_ENV",
         "DATABASE_URL",
         "ANTHROPIC_API_KEY",
         "DEEPGRAM_API_KEY",
@@ -33,7 +33,8 @@
         "NEON_PROJECT_ID",
         "SESSION_SECRET",
         "CORS_ORIGIN",
-        "MAX_FILE_SIZE"
+        "MAX_FILE_SIZE",
+        "FRONTEND_URL"
       ]
     },
     "dev": {
