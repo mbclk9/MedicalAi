@@ -8,16 +8,25 @@ const router = Router();
 
 // Patient validation schema
 const createPatientSchema = z.object({
-  name: z.string().min(1, "Ad gereklidir").max(50, "Ad çok uzun"),
-  surname: z.string().min(1, "Soyad gereklidir").max(50, "Soyad çok uzun"),
+  name: z.string().min(1, "Ad alanı zorunludur."),
+  surname: z.string().min(1, "Soyad alanı zorunludur."),
   tcKimlik: z.string().optional().nullable(),
   sgkNumber: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
-  email: z.string().email("Geçersiz e-posta formatı").optional().nullable(),
+  email: z.string().email("Lütfen geçerli bir e-posta adresi girin.").optional().nullable(),
   birthDate: z.string().optional().nullable(),
-  gender: z.enum(["Erkek", "Kadın", "Diğer"]).optional().nullable(),
+  
+  // Boş string geldiğinde hata vermemesi için preprocess ekliyoruz.
+  gender: z.preprocess(
+    (val) => (val === "" ? null : val), 
+    z.enum(["Erkek", "Kadın", "Diğer"]).optional().nullable()
+  ),
+
   address: z.string().optional().nullable(),
-});
+  
+  // Frontend'den gelen diğer tüm alanları kabul etmesi için .passthrough() ekliyoruz.
+  // Bu, şemada tanımlanmayan alanların hata vermesini engeller.
+}).passthrough();
 
 // Utility function to clean null/empty values
 function cleanPatientData(data: any) {

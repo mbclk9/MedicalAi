@@ -57,20 +57,17 @@ export default function AddPatient() {
   });
 
   const addPatientMutation = useMutation({
-    mutationFn: async (patientData: typeof formData): Promise<Patient> => {
-      // Boş alanları temizle
+    // Fonksiyonu sadeleştiriyoruz.
+    mutationFn: (patientData: typeof formData): Promise<Patient> => {
       const cleanData = Object.fromEntries(
         Object.entries(patientData).map(([key, value]) => [key, value || undefined])
       );
       
       console.log("Sending patient data:", cleanData);
       
-      const response = await apiRequest("POST", "/patients", cleanData);
-      const result = await response.json();
-      
-      console.log("Patient creation response:", result);
-      
-      return result;
+      // apiRequest zaten bize doğrudan Patient objesini döndürecek.
+      // Bu yüzden ekstra .json() çağırmaya ve await'e gerek yok.
+      return apiRequest("POST", "/patients", cleanData);
     },
     onSuccess: (newPatient: Patient) => {
       queryClient.invalidateQueries({ queryKey: ["/patients"] });
@@ -81,29 +78,10 @@ export default function AddPatient() {
       setLocation("/patients");
     },
     onError: (error: any) => {
-      console.error("Patient creation error:", error);
-      
-      let errorMessage = "Hasta eklenirken bir hata oluştu.";
-      
-      if (error.message) {
-        try {
-          const errorData = JSON.parse(error.message.split(': ')[1] || '{}');
-          if (errorData.message) {
-            errorMessage = errorData.message;
-          }
-          if (errorData.errors && Array.isArray(errorData.errors)) {
-            errorMessage = errorData.errors.map((e: any) => e.message).join(', ');
-          }
-        } catch {
-          if (error.message.includes(':')) {
-            errorMessage = error.message.split(': ')[1] || errorMessage;
-          }
-        }
-      }
-      
+      // Hata mesajını doğrudan alıyoruz.
       toast({
         title: "Hata",
-        description: errorMessage,
+        description: error.message || "Hasta eklenirken bir hata oluştu.",
         variant: "destructive",
       });
     },
