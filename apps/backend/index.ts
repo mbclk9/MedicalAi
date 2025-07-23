@@ -24,7 +24,7 @@ if (!process.env.NODE_ENV) {
 // Ensure DATABASE_URL is set
 if (!process.env.DATABASE_URL) {
   console.log("⚠️  DATABASE_URL not found in index.ts, setting fallback...");
-  process.env.DATABASE_URL = "postgresql://postgres:password@localhost:5432/tipscribe_db";
+  process.env.DATABASE_URL = "postgresql://neondb_owner:npg_H7hpFM9yDJiV@ep-soft-cake-a2c31hrv-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
   console.log("✅ Set fallback DATABASE_URL");
 }
 
@@ -32,8 +32,13 @@ if (!process.env.DATABASE_URL) {
 // Import core modules
 // ===============================================
 import express, { type Request, Response, NextFunction } from "express";
+import { registerRoutes } from "./src/routes/index";
+import session from "express-session";
 import { createServer } from "http"; // HTTP sunucusu için gerekli, kalsın
 import multer from "multer";
+import cors from "cors"; 
+import { pool, db } from "@repo/db";
+import passport from 'passport';
 // WebSocket ile ilgili importlar ve neonConfig kaldırıldı
 // import ws from "ws"; // KALDIRILDI - db.ts'den de kaldırıldığı için burada da olmamalı
 import { setupVite, serveStatic, log } from "./vite";
@@ -92,18 +97,12 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // CORS middleware - Vercel ile uyumlu
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  res.header('Content-Type', 'application/json; charset=utf-8');
-  
-  if (req.method === "OPTIONS") {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
+app.use(cors({
+  origin: 'https://medical-ai-frontend.vercel.app', // KENDİ VERCEL URL'NİZİ BURAYA YAZIN
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Multer configuration for file uploads
 const upload = multer({ 

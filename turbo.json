@@ -7,9 +7,9 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"], 
+      "outputs": ["dist/**", ".next/**"],
       "env": [
-      "NODE_ENV",
+        "NODE_ENV",
         "DATABASE_URL",
         "ANTHROPIC_API_KEY",
         "DEEPGRAM_API_KEY",
@@ -35,6 +35,7 @@
         "CORS_ORIGIN",
         "MAX_FILE_SIZE",
         "FRONTEND_URL"
+        
       ]
     },
     "dev": {

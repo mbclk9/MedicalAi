@@ -3,13 +3,7 @@
   "builds": [
     {
       "src": "apps/backend/dist/index.js",
-      "outputDirectory": "apps/frontend/dist",
-      "buildCommand": "npm run build",
-      "framework": "vite",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["apps/backend/dist/**"]
-      }
+      "use": "@vercel/node"
     },
     {
       "src": "apps/frontend/package.json",
@@ -26,7 +20,7 @@
     },
     {
       "src": "/assets/(.*)",
-      "dest": "/apps/frontend/dist/assets/$1"
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
@@ -37,18 +31,5 @@
     "apps/backend/dist/index.js": {
       "maxDuration": 30
     }
-  },
-  "env": {
-    "NODE_ENV": "production"
-  }, 
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
+  }
 }
