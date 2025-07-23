@@ -21,8 +21,31 @@ const createPatientSchema = z.object({
     (val) => (val === "" ? null : val), 
     z.enum(["Erkek", "Kadın", "Diğer"]).optional().nullable()
   ),
-
+  maritalStatus: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
+  // İletişim Bilgileri
+  phone: z.string().optional().nullable(),
+  email: z.string().email("Geçersiz e-posta formatı").optional().nullable(),
+  address: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
+  district: z.string().optional().nullable(),
+  postalCode: z.string().optional().nullable(),
+
+  // Sağlık Sigortası
+  sgkNumber: z.string().optional().nullable(),
+  insuranceType: z.string().optional().nullable(),
+  insuranceCompany: z.string().optional().nullable(),
+   // Acil Durum
+   emergencyContactName: z.string().optional().nullable(),
+   emergencyContactPhone: z.string().optional().nullable(),
+   emergencyContactRelation: z.string().optional().nullable(),
+   
+   // Tıbbi Bilgiler
+   bloodType: z.string().optional().nullable(),
+   chronicDiseases: z.string().optional().nullable(),
+   allergies: z.string().optional().nullable(),
+   medications: z.string().optional().nullable(),
+   notes: z.string().optional().nullable(),
   
   // Frontend'den gelen diğer tüm alanları kabul etmesi için .passthrough() ekliyoruz.
   // Bu, şemada tanımlanmayan alanların hata vermesini engeller.
@@ -98,7 +121,6 @@ router.post("/", async (req, res) => {
   try {
     console.log("📝 POST /api/patients - Creating new patient...");
     console.log("📥 Raw request body:", JSON.stringify(req.body, null, 2));
-    console.log("📋 Request headers:", JSON.stringify(req.headers, null, 2));
     
     // Validate request body exists
     if (!req.body || Object.keys(req.body).length === 0) {
@@ -131,6 +153,7 @@ router.post("/", async (req, res) => {
       // Then validate with Zod
       validatedData = createPatientSchema.parse(cleanedData);
       console.log("✅ Validation passed:", JSON.stringify(validatedData, null, 2));
+      
     } catch (zodError: any) {
       console.log("❌ Validation error:", zodError);
       return res.status(400).json({
@@ -142,6 +165,7 @@ router.post("/", async (req, res) => {
 
     // Prepare final data for storage
     const patientData = {
+      ...validatedData,
       name: validatedData.name.trim(),
       surname: validatedData.surname.trim(),
       tcKimlik: validatedData.tcKimlik || null,

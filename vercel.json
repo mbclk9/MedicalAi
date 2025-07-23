@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "apps/backend/dist/index.js",
+      "src": "apps/backend/src/index.ts",
       "use": "@vercel/node"
     },
     {
@@ -16,20 +16,15 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/apps/backend/dist/index.js"
+      "dest": "/apps/backend/src/index.ts"
     },
     {
-      "src": "/assets/(.*)",
+      "src": "/(.*)",
       "handle": "filesystem"
     },
     {
       "src": "/(.*)",
       "dest": "/apps/frontend/dist/index.html"
     }
-  ],
-  "functions": {
-    "apps/backend/dist/index.js": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }
