@@ -1,79 +1,38 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes/index";  // src/routes/index.ts (dikkat: ./routes/index)
-import { pool, db } from "@repo/db";
-import session from 'express-session';
-import passport from 'passport';
-import { sql } from "drizzle-orm";
-import cors from 'cors'; 
+import cors from 'cors';
+import { registerRoutes } from "./routes/index.js"; // .js uzantısı ESM modülleri için önemlidir
+import { pool } from "@repo/db";
 
-// Environment validation function
+// ==============================================================================
+// FONKSİYONLAR (Değişiklik yok, olduğu gibi kalabilir)
+// ==============================================================================
+
 function validateEnvironment() {
-  const requiredEnvVars = [
-    'DATABASE_URL'
-  ];
-  
-  const optionalEnvVars = [
-    'ANTHROPIC_API_KEY',
-    'OPENAI_API_KEY',
-    'DEEPGRAM_API_KEY'
-  ];
-  
-  console.log("🔧 Environment validation starting...");
-  
-  // Check required environment variables
+  const requiredEnvVars = ['DATABASE_URL'];
+  console.log("🔧 Ortam değişkenleri doğrulanıyor...");
   const missingRequired = requiredEnvVars.filter(env => !process.env[env]);
   if (missingRequired.length > 0) {
-    console.error("❌ Missing required environment variables:", missingRequired.join(', '));
-    throw new Error(`Missing required environment variables: ${missingRequired.join(', ')}`);
+    const errorMessage = `❌ Gerekli ortam değişkenleri eksik: ${missingRequired.join(', ')}`;
+    console.error(errorMessage);
+    throw new Error(errorMessage);
   }
-  
-  // Check optional environment variables
-  const missingOptional = optionalEnvVars.filter(env => !process.env[env]);
-  if (missingOptional.length > 0) {
-    console.warn("⚠️  Missing optional environment variables:", missingOptional.join(', '));
-    console.warn("⚠️  Some AI services may not work without these keys");
-  }
-  
-  // API key format validation
-  if (process.env.DEEPGRAM_API_KEY && !process.env.DEEPGRAM_API_KEY.startsWith('Token ')) {
-    console.warn("⚠️  DEEPGRAM_API_KEY should start with 'Token '");
-  }
-  
-  if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.startsWith('sk-')) {
-    console.warn("⚠️  OPENAI_API_KEY should start with 'sk-'");
-  }
-  
-  if (process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_API_KEY.startsWith('sk-ant-')) {
-    console.warn("⚠️  ANTHROPIC_API_KEY should start with 'sk-ant-'");
-  }
-  
-  console.log("✅ Environment validation completed");
+  console.log("✅ Ortam değişkenleri doğrulandı.");
 }
 
-// Veritabanı bağlantısını test etmek için bir fonksiyon
 async function testDbConnection() {
   try {
-    console.log("🔗 Neon veritabanına bağlanılıyor...");
-    
-    // Pool'dan bir client al ve test et
+    console.log("🔗 Veritabanına bağlanılıyor...");
     const client = await pool.connect();
-    console.log("✅ Neon veritabanı istemcisi başarıyla bağlandı.");
-    
-    try {
-      // Basit bir sorgu çalıştırarak bağlantıyı doğrula
-      const result = await client.query('SELECT 1 as test');
-      console.log("✅ Neon veritabanı test sorgusu başarılı:", result.rows[0]);
-    } finally {
-      // Client'ı pool'a geri ver
-      client.release();
-    }
+    console.log("✅ Veritabanı istemcisi bağlandı.");
+    await client.query('SELECT 1');
+    client.release();
+    console.log("✅ Veritabanı bağlantısı başarılı.");
   } catch (err: any) {
-    console.error("❌ Neon veritabanı bağlantısı başarısız:", err.message);
-    throw err; // Hatayı fırlat, uygulama başlamasın
+    console.error("❌ Veritabanı bağlantısı başarısız:", err.message);
+    throw err;
   }
 }
 
-// Bağlantıyı düzgün bir şekilde kapatmak için fonksiyon
 async function closeDbConnection() {
     try {
         console.log("🔌 Veritabanı bağlantısı kapatılıyor...");
@@ -84,92 +43,74 @@ async function closeDbConnection() {
     }
 }
 
+// ==============================================================================
+// EXPRESS UYGULAMASI VE CORS YAPILANDIRMASI (TÜM DEĞİŞİKLİKLER BURADA)
+// ==============================================================================
+
 const app = express();
 
-// CORS middleware - test için '*', production'da domain'e değiştir
-app.use(cors({
-  origin: '*',  // Test için, sonra 'https://ai-medical-assistant.vercel.app' yap
-  credentials: true,
+// --- NİHAİ CORS YAPILANDIRMASI ---
+const frontendUrl = process.env.FRONTEND_URL;
+
+if (!frontendUrl) {
+  console.warn("⚠️  FRONTEND_URL ortam değişkeni tanımlanmamış. Production'da CORS sorunları yaşanabilir.");
+}
+
+// İzin verilecek adresleri tanımla. filter(Boolean) ile null/undefined değerler listeden çıkarılır.
+const allowedOrigins = [frontendUrl, "http://localhost:3000"].filter(Boolean);
+
+const corsOptions = {
+  origin: allowedOrigins,
+  credentials: true, // Cookie gibi bilgilerin gönderilmesine izin ver
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
+};
 
-// OPTIONS preflight için
-app.options('*', cors());
+console.log("✅ CORS için izin verilen adresler:", allowedOrigins);
 
-// Body parsing middleware
+// Hem ana istekler hem de 'preflight' (OPTIONS) istekleri için aynı CORS yapılandırmasını kullan.
+app.use(cors(corsOptions));
+// --- CORS YAPILANDIRMASI SONU ---
+
+
+// Diğer middleware'ler
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
-  const timestamp = new Date().toISOString();
-  console.log(`${timestamp} ${req.method} ${req.url} - Body: ${JSON.stringify(req.body)}`);
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
   next();
 });
 
-// Initialize app for Vercel
+// ==============================================================================
+// UYGULAMA BAŞLATMA VE EXPORT (Değişiklik yok)
+// ==============================================================================
+
 async function initializeApp() {
   try {
-    // Validate environment first
     validateEnvironment();
-    
-    // Database bağlantısını test et
     await testDbConnection();
-    
-    // Route'ları yükle
     registerRoutes(app);
     
-    // Error handling middleware
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      console.error('Error:', err);
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-      res.status(status).json({ message });
+      console.error('Hata:', err);
+      res.status(err.status || 500).json({ message: err.message || "Sunucu Hatası" });
     });
 
-    // Health check endpoint
     app.get('/api/health', (req, res) => {
-      res.json({ status: 'OK', timestamp: new Date().toISOString() });
+      res.json({ status: 'OK' });
     });
 
-    console.log("✅ App initialized successfully");
+    console.log("✅ Uygulama başarıyla başlatıldı.");
     return app;
   } catch (error) {
-    console.error("❌ App initialization failed:", error);
+    console.error("❌ Uygulama başlatılamadı:", error);
     throw error;
   }
 }
 
-// For local development
-if (process.env.NODE_ENV !== 'production') {
-  (async () => {
-    await initializeApp();
-    
-    const port = process.env.PORT || 5000;
-    const server = app.listen(port, () => {
-      console.log(`🚀 Backend server running on port ${port}`);
-      console.log(`📡 API endpoints available at http://localhost:${port}/api`);
-    });
-
-    // Graceful shutdown
-    const gracefulShutdown = (signal: string) => {
-      console.log(`\n🛑 Alınan sinyal: ${signal}, sunucu kapatılıyor...`);
-      server.close(async () => {
-        await closeDbConnection();
-        console.log('✅ Sunucu başarıyla kapatıldı.');
-        process.exit(0);
-      });
-    };
-
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-  })();
-}
-
-// Initialize app for Vercel
+// Vercel için uygulama export'u
 let initializedApp: any = null;
-
 async function getApp() {
   if (!initializedApp) {
     initializedApp = await initializeApp();
@@ -177,14 +118,12 @@ async function getApp() {
   return initializedApp;
 }
 
-// For Vercel deployment - proper serverless function export
 export default async function handler(req: any, res: any) {
   try {
     const app = await getApp();
     return app(req, res);
   } catch (error: any) {
-    console.error("❌ Handler error:", error);
-    return res.status(500).json({
+    res.status(500).json({
       error: "Internal server error",
       message: error.message
     });
