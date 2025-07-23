@@ -1,28 +1,28 @@
 import { Router } from "express";
 import { storage } from "../../storage.js";
 import { z } from "zod";
-import { insertPatientSchema } from '@shared/schema';
 import { fromZodError } from 'zod-validation-error';
 
 const router = Router();
 
-// Patient validation schema
+// ==============================================================================
+// NİHAİ VE TEMİZLENMİŞ HASTA DOĞRULAMA ŞEMASI
+// Yinelenen tüm alanlar kaldırıldı ve formla tam uyumlu hale getirildi.
+// ==============================================================================
 const createPatientSchema = z.object({
+  // Kimlik Bilgileri
   name: z.string().min(1, "Ad alanı zorunludur."),
   surname: z.string().min(1, "Soyad alanı zorunludur."),
   tcKimlik: z.string().optional().nullable(),
-  sgkNumber: z.string().optional().nullable(),
-  phone: z.string().optional().nullable(),
-  email: z.string().email("Lütfen geçerli bir e-posta adresi girin.").optional().nullable(),
-  birthDate: z.string().optional().nullable(),
-  
-  // Boş string geldiğinde hata vermemesi için preprocess ekliyoruz.
+  passportNo: z.string().optional().nullable(),
+  birthDate: z.coerce.date().optional().nullable(), // String'i otomatik Date objesine çevirir
+  birthPlace: z.string().optional().nullable(),
   gender: z.preprocess(
     (val) => (val === "" ? null : val), 
     z.enum(["Erkek", "Kadın", "Diğer"]).optional().nullable()
   ),
   maritalStatus: z.string().optional().nullable(),
-  address: z.string().optional().nullable(),
+  
   // İletişim Bilgileri
   phone: z.string().optional().nullable(),
   email: z.string().email("Geçersiz e-posta formatı").optional().nullable(),
@@ -30,59 +30,42 @@ const createPatientSchema = z.object({
   city: z.string().optional().nullable(),
   district: z.string().optional().nullable(),
   postalCode: z.string().optional().nullable(),
-
+  
   // Sağlık Sigortası
   sgkNumber: z.string().optional().nullable(),
   insuranceType: z.string().optional().nullable(),
   insuranceCompany: z.string().optional().nullable(),
-   // Acil Durum
-   emergencyContactName: z.string().optional().nullable(),
-   emergencyContactPhone: z.string().optional().nullable(),
-   emergencyContactRelation: z.string().optional().nullable(),
-   
-   // Tıbbi Bilgiler
-   bloodType: z.string().optional().nullable(),
-   chronicDiseases: z.string().optional().nullable(),
-   allergies: z.string().optional().nullable(),
-   medications: z.string().optional().nullable(),
-   notes: z.string().optional().nullable(),
   
-  // Frontend'den gelen diğer tüm alanları kabul etmesi için .passthrough() ekliyoruz.
-  // Bu, şemada tanımlanmayan alanların hata vermesini engeller.
-}).passthrough();
+  // Acil Durum
+  emergencyContactName: z.string().optional().nullable(),
+  emergencyContactPhone: z.string().optional().nullable(),
+  emergencyContactRelation: z.string().optional().nullable(),
+  
+  // Tıbbi Bilgiler
+  bloodType: z.string().optional().nullable(),
+  chronicDiseases: z.string().optional().nullable(),
+  allergies: z.string().optional().nullable(),
+  medications: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+}).passthrough(); // Şemada olmayan ekstra alanlara izin ver
 
-// Utility function to clean null/empty values
+// Gelen verideki boş string'leri null'a çevirir.
 function cleanPatientData(data: any) {
   const cleaned: any = {};
-  
   for (const [key, value] of Object.entries(data)) {
-    if (value === "" || value === undefined) {
-      cleaned[key] = null;
-    } else if (key === "birthDate" && value) {
-      // Convert date string to Date object
-      cleaned[key] = new Date(value as string);
-    } else {
-      cleaned[key] = value;
-    }
+    cleaned[key] = value === "" ? null : value;
   }
-  
   return cleaned;
 }
 
 // Get all patients
 router.get("/", async (req, res) => {
   try {
-    console.log("📋 GET /api/patients - Fetching all patients...");
     const patients = await storage.getPatients();
-    console.log(`✅ Retrieved ${patients.length} patients`);
     res.json(patients);
   } catch (error: any) {
     console.error("❌ Get patients error:", error);
-    res.status(500).json({ 
-      error: "Failed to fetch patients", 
-      message: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.status(500).json({ message: "Hastalar alınırken bir hata oluştu." });
   }
 });
 
@@ -90,128 +73,56 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const patientId = parseInt(req.params.id);
-    console.log(`📋 GET /api/patients/${patientId} - Fetching patient...`);
-    
     if (isNaN(patientId)) {
-      console.log("❌ Invalid patient ID:", req.params.id);
-      return res.status(400).json({ error: "Invalid patient ID" });
+      return res.status(400).json({ message: "Geçersiz hasta ID." });
     }
-    
     const patient = await storage.getPatient(patientId);
-    
     if (!patient) {
-      console.log(`⚠️  Patient ${patientId} not found`);
-      return res.status(404).json({ error: "Patient not found" });
+      return res.status(404).json({ message: "Hasta bulunamadı." });
     }
-    
-    console.log(`✅ Patient ${patientId} retrieved:`, patient.name, patient.surname);
     res.json(patient);
   } catch (error: any) {
-    console.error("❌ Get patient error:", error);
-    res.status(500).json({ 
-      error: "Failed to fetch patient", 
-      message: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    console.error(`❌ Get patient by ID error (ID: ${req.params.id}):`, error);
+    res.status(500).json({ message: "Hasta alınırken bir hata oluştu." });
   }
 });
 
-// Create new patient - CRITICAL FIXED ENDPOINT
+
+// Create new patient
 router.post("/", async (req, res) => {
   try {
     console.log("📝 POST /api/patients - Creating new patient...");
-    console.log("📥 Raw request body:", JSON.stringify(req.body, null, 2));
     
-    // Validate request body exists
     if (!req.body || Object.keys(req.body).length === 0) {
-      console.log("❌ Empty request body");
-      return res.status(400).json({ 
-        error: "Request body is empty",
-        message: "Patient data is required"
-      });
+      return res.status(400).json({ message: "İstek gövdesi boş olamaz." });
     }
 
-    // Validate required fields
-    const { name, surname } = req.body;
-    if (!name || !surname) {
-      console.log("❌ Missing required fields:", { name: !!name, surname: !!surname });
-      return res.status(400).json({ 
-        error: "Missing required fields", 
-        message: "Name and surname are required",
-        required: ["name", "surname"],
-        received: Object.keys(req.body)
-      });
-    }
-
-    // Clean and validate data using Zod
     let validatedData;
     try {
-      // First clean the data
       const cleanedData = cleanPatientData(req.body);
-      console.log("🧹 Cleaned data:", JSON.stringify(cleanedData, null, 2));
-      
-      // Then validate with Zod
       validatedData = createPatientSchema.parse(cleanedData);
-      console.log("✅ Validation passed:", JSON.stringify(validatedData, null, 2));
-      
+      console.log("✅ Validation passed.");
+
     } catch (zodError: any) {
-      console.log("❌ Validation error:", zodError);
+      const validationError = fromZodError(zodError);
+      console.error("❌ Validation error:", validationError.toString());
       return res.status(400).json({
         error: "Validation failed",
-        message: "Invalid patient data",
-        details: zodError.errors || zodError.message
+        message: validationError.toString(),
       });
     }
 
-    // Prepare final data for storage
-    const patientData = {
-      ...validatedData,
-      name: validatedData.name.trim(),
-      surname: validatedData.surname.trim(),
-      tcKimlik: validatedData.tcKimlik || null,
-      sgkNumber: validatedData.sgkNumber || null,
-      phone: validatedData.phone || null,
-      email: validatedData.email || null,
-      gender: validatedData.gender || null,
-      address: validatedData.address || null,
-      birthDate: validatedData.birthDate ? new Date(validatedData.birthDate) : null,
-    };
-
-    console.log("💾 Final data for storage:", JSON.stringify(patientData, null, 2));
-
-    // Attempt to create patient
-    let patient;
-    try {
-      patient = await storage.createPatient(patientData);
-      console.log("✅ Patient created successfully in storage:", patient);
-    } catch (storageError: any) {
-      console.error("❌ Storage error:", storageError);
-      return res.status(500).json({
-        error: "Failed to save patient",
-        message: "Database operation failed",
-        details: process.env.NODE_ENV === 'development' ? storageError.message : undefined
-      });
-    }
-
-    // Success response
-    console.log("🎉 Patient creation completed successfully:", patient.id, patient.name, patient.surname);
-    res.status(201).json({
-      ...patient,
-      message: "Patient created successfully"
-    });
+    // Doğrulanmış veri doğrudan veritabanı katmanına gönderilir.
+    const patient = await storage.createPatient(validatedData);
+    console.log("🎉 Patient creation completed successfully:", patient.id);
+    
+    res.status(201).json(patient);
 
   } catch (error: any) {
     console.error("💥 Unexpected error in patient creation:", error);
-    console.error("Error stack:", error.stack);
-    
     res.status(500).json({ 
       error: "Internal server error", 
-      message: "An unexpected error occurred while creating the patient",
-      details: process.env.NODE_ENV === 'development' ? {
-        message: error.message,
-        stack: error.stack,
-        body: req.body
-      } : undefined
+      message: "Hasta oluşturulurken beklenmedik bir hata oluştu."
     });
   }
 });
@@ -220,40 +131,23 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const patientId = parseInt(req.params.id);
-    console.log(`📝 PUT /api/patients/${patientId} - Updating patient...`);
-    console.log("📥 Update data:", JSON.stringify(req.body, null, 2));
+     if (isNaN(patientId)) {
+      return res.status(400).json({ message: "Geçersiz hasta ID." });
+    }
+
+    // Kısmi doğrulama için .partial() kullanılır
+    const validatedData = createPatientSchema.partial().parse(req.body);
     
-    if (isNaN(patientId)) {
-      return res.status(400).json({ error: "Invalid patient ID" });
-    }
-
-    // Check if patient exists
-    const existingPatient = await storage.getPatient(patientId);
-    if (!existingPatient) {
-      console.log(`⚠️  Patient ${patientId} not found for update`);
-      return res.status(404).json({ error: "Patient not found" });
-    }
-
-    // Clean and validate update data
-    const cleanedData = cleanPatientData(req.body);
-    const validatedData = createPatientSchema.partial().parse(cleanedData);
-
-    // For now, return updated data (in full implementation, add updatePatient to storage)
-    const updatedPatient = {
-      ...existingPatient,
-      ...validatedData,
-      id: patientId // Ensure ID stays the same
-    };
-
-    console.log("✅ Patient updated (mock):", patientId);
+    const updatedPatient = await storage.updatePatient(patientId, validatedData);
     res.json(updatedPatient);
-  } catch (error: any) {
-    console.error("❌ Update patient error:", error);
-    res.status(500).json({ 
-      error: "Failed to update patient", 
-      message: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+
+  } catch (error: any)
+    {
+    console.error(`❌ Update patient error (ID: ${req.params.id}):`, error);
+    if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+    }
+    res.status(500).json({ message: "Hasta güncellenirken bir hata oluştu." });
   }
 });
 
@@ -261,103 +155,14 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const patientId = parseInt(req.params.id);
-    console.log(`🗑️  DELETE /api/patients/${patientId} - Deleting patient...`);
-    
     if (isNaN(patientId)) {
-      return res.status(400).json({ error: "Invalid patient ID" });
+      return res.status(400).json({ message: "Geçersiz hasta ID." });
     }
-
-    // Check if patient exists
-    const existingPatient = await storage.getPatient(patientId);
-    if (!existingPatient) {
-      console.log(`⚠️  Patient ${patientId} not found for deletion`);
-      return res.status(404).json({ error: "Patient not found" });
-    }
-    
     await storage.deletePatient(patientId);
-    console.log(`✅ Patient ${patientId} deleted successfully`);
-    
-    res.json({ 
-      success: true, 
-      message: "Patient deleted successfully",
-      deletedPatient: {
-        id: patientId,
-        name: existingPatient.name,
-        surname: existingPatient.surname
-      }
-    });
+    res.status(200).json({ message: "Hasta başarıyla silindi." });
   } catch (error: any) {
-    console.error("❌ Delete patient error:", error);
-    res.status(500).json({ 
-      error: "Failed to delete patient", 
-      message: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-
-// Get patient visits
-router.get("/:id/visits", async (req, res) => {
-  try {
-    const patientId = parseInt(req.params.id);
-    console.log(`📋 GET /api/patients/${patientId}/visits - Fetching patient visits...`);
-    
-    if (isNaN(patientId)) {
-      return res.status(400).json({ error: "Invalid patient ID" });
-    }
-
-    // Check if patient exists
-    const patient = await storage.getPatient(patientId);
-    if (!patient) {
-      console.log(`⚠️  Patient ${patientId} not found`);
-      return res.status(404).json({ error: "Patient not found" });
-    }
-    
-    const visits = await storage.getVisitsByPatient(patientId);
-    console.log(`✅ Retrieved ${visits.length} visits for patient ${patientId}`);
-    
-    res.json(visits);
-  } catch (error: any) {
-    console.error("❌ Get patient visits error:", error);
-    res.status(500).json({ 
-      error: "Failed to fetch patient visits", 
-      message: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-
-// Search patients
-router.get("/search/:query", async (req, res) => {
-  try {
-    const query = req.params.query.toLowerCase().trim();
-    console.log(`🔍 GET /api/patients/search/${query} - Searching patients...`);
-    
-    if (query.length < 2) {
-      return res.status(400).json({ 
-        error: "Search query too short",
-        message: "Query must be at least 2 characters long"
-      });
-    }
-    
-    const allPatients = await storage.getPatients();
-    const filteredPatients = allPatients.filter(patient => 
-      patient.name.toLowerCase().includes(query) ||
-      patient.surname.toLowerCase().includes(query) ||
-      (patient.tcKimlik && patient.tcKimlik.includes(query)) ||
-      (patient.phone && patient.phone.includes(query)) ||
-      (patient.email && patient.email.toLowerCase().includes(query))
-    );
-    
-    console.log(`✅ Found ${filteredPatients.length} patients matching "${query}"`);
-    res.json(filteredPatients);
-  } catch (error: any) {
-    console.error("❌ Search patients error:", error);
-    res.status(500).json({ 
-      error: "Failed to search patients", 
-      message: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    console.error(`❌ Delete patient error (ID: ${req.params.id}):`, error);
+    res.status(500).json({ message: "Hasta silinirken bir hata oluştu." });
   }
 });
 
