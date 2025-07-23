@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx --env-file=../../.env src/index.ts",
     "build": "npm run db:push --workspace=@repo/db && esbuild src/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:pg-native",
