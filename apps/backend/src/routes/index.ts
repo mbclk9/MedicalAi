@@ -10,6 +10,120 @@ export function registerRoutes(app: Express) {
   // /api/patients yolunu patientsRouter'a bağlıyoruz.
   apiRouter.use('/patients', patientsRouter);
 
+  // Templates endpoint'i
+  apiRouter.get('/templates', async (req, res) => {
+    try {
+      console.log("📋 Templates request received");
+      
+      // For now, return sample templates
+      // In a real app, this would fetch templates from database
+      res.json([
+        {
+          id: 1,
+          name: "Kardiyoloji Muayene",
+          specialty: "Kardiyoloji",
+          content: "Kardiyoloji muayene şablonu...",
+          createdAt: new Date()
+        },
+        {
+          id: 2,
+          name: "Genel Muayene",
+          specialty: "Genel",
+          content: "Genel muayene şablonu...",
+          createdAt: new Date()
+        }
+      ]);
+    } catch (error: any) {
+      console.error("❌ Get templates error:", error);
+      res.status(500).json({ 
+        message: "Failed to get templates",
+        error: error.message 
+      });
+    }
+  });
+
+  // Visits endpoint'i
+  apiRouter.get('/visits', async (req, res) => {
+    try {
+      console.log("📋 Visits request received");
+      
+      // For now, return empty array
+      // In a real app, this would fetch visits from database
+      res.json([]);
+    } catch (error: any) {
+      console.error("❌ Get visits error:", error);
+      res.status(500).json({ 
+        message: "Failed to get visits",
+        error: error.message 
+      });
+    }
+  });
+
+  // Create visit endpoint
+  apiRouter.post('/visits', async (req, res) => {
+    try {
+      console.log("📝 Create visit request received:", req.body);
+      
+      const { patientId, doctorId, templateId, visitType } = req.body;
+      
+      if (!patientId || !doctorId || !visitType) {
+        return res.status(400).json({ 
+          message: "PatientId, doctorId and visitType are required" 
+        });
+      }
+      
+      // For now, return a mock visit
+      // In a real app, this would create visit in database
+      const newVisit = {
+        id: Date.now(),
+        patientId,
+        doctorId,
+        templateId,
+        visitType,
+        status: "active",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      console.log("✅ Visit created:", newVisit.id);
+      res.status(201).json(newVisit);
+    } catch (error: any) {
+      console.error("❌ Create visit error:", error);
+      res.status(500).json({ 
+        message: "Failed to create visit",
+        error: error.message 
+      });
+    }
+  });
+
+  // Get visit by ID endpoint
+  apiRouter.get('/visits/:id', async (req, res) => {
+    try {
+      console.log("📋 Get visit request received, ID:", req.params.id);
+      
+      // For now, return a mock visit
+      // In a real app, this would fetch visit from database
+      const visit = {
+        id: parseInt(req.params.id),
+        patientId: 1,
+        doctorId: 1,
+        templateId: 1,
+        visitType: "kontrol",
+        status: "active",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      res.json(visit);
+    } catch (error: any) {
+      console.error("❌ Get visit error:", error);
+      res.status(500).json({ 
+        message: "Failed to get visit",
+        error: error.message 
+      });
+    }
+  });
+
   // Doctor endpoint'i
   apiRouter.get('/doctor', async (req, res) => {
     try {
