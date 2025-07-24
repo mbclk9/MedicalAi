@@ -124,6 +124,43 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Update visit endpoint (PATCH)
+  apiRouter.patch('/visits/:id', async (req, res) => {
+    try {
+      console.log("📝 Update visit request received, ID:", req.params.id, "Data:", req.body);
+      
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ 
+          message: "Status is required" 
+        });
+      }
+      
+      // For now, return a mock updated visit
+      // In a real app, this would update visit in database
+      const updatedVisit = {
+        id: parseInt(req.params.id),
+        patientId: 1,
+        doctorId: 1,
+        templateId: 1,
+        visitType: "kontrol",
+        status: status,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      console.log("✅ Visit updated:", updatedVisit.id);
+      res.json(updatedVisit);
+    } catch (error: any) {
+      console.error("❌ Update visit error:", error);
+      res.status(500).json({ 
+        message: "Failed to update visit",
+        error: error.message 
+      });
+    }
+  });
+
   // Doctor endpoint'i
   apiRouter.get('/doctor', async (req, res) => {
     try {
@@ -160,6 +197,45 @@ export function registerRoutes(app: Express) {
       console.error("❌ Get recent visits error:", error);
       res.status(500).json({ 
         message: "Failed to get recent visits",
+        error: error.message 
+      });
+    }
+  });
+
+  // Generate note endpoint
+  apiRouter.post('/generate-note', async (req, res) => {
+    try {
+      console.log("📝 Generate note request received:", req.body);
+      
+      const { transcription, visitId, templateId } = req.body;
+      
+      if (!transcription || !visitId) {
+        return res.status(400).json({ 
+          message: "Transcription and visitId are required" 
+        });
+      }
+      
+      // For now, return a mock generated note
+      // In a real app, this would use AI to generate medical note
+      const generatedNote = {
+        id: Date.now(),
+        visitId: visitId,
+        transcription: transcription,
+        generatedNote: {
+          subjective: "Hasta şikayetlerini anlattı...",
+          objective: "Muayene bulguları...",
+          assessment: "Tanı ve değerlendirme...",
+          plan: "Tedavi planı..."
+        },
+        createdAt: new Date()
+      };
+      
+      console.log("✅ Note generated for visit:", visitId);
+      res.status(201).json(generatedNote);
+    } catch (error: any) {
+      console.error("❌ Generate note error:", error);
+      res.status(500).json({ 
+        message: "Failed to generate note",
         error: error.message 
       });
     }
